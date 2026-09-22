@@ -72,7 +72,7 @@ export default function App() {
   const completedPriorities = goals.flatMap(g => g.priorities).filter(p => p.done).length;
   const totalPriorities = goals.flatMap(g => g.priorities).length;
   const score = totalPriorities ? Math.round((completedPriorities / totalPriorities) * 100) : 0;
-  const todaySteps = goals.flatMap(g => g.priorities.filter(p => !p.done).map(p => ({...p, goalId:g.id, goalTitle:g.title, category:g.category}))).slice(0,5);
+  const todaySteps = goals.flatMap(g => g.priorities.filter(p => !p.done).map(p => ({...p, goalId:g.id, goalTitle:g.title, category:g.category, progress:g.progress}))).slice(0,3);
 
   function newGoal() {
     setEditing({
@@ -129,16 +129,18 @@ export default function App() {
         </header>
 
         <section className="today-board">
-          <div className="section-title"><div><p className="eyebrow">TODAY</p><h2>Next Steps</h2><p>Finish the actions that move the big goals forward. Anything unfinished rolls into tomorrow.</p></div><span className="rollover"><RotateCcw size={14}/> Auto-rollover</span></div>
-          <div className="today-grid">
-            <div className="action-stack">
-              {todaySteps.map(step => <button className="today-action" key={step.id} onClick={() => togglePriority(step.goalId, step.id)}>
-                <span className="action-check"><CheckCircle2 size={24}/></span><span className="action-copy"><b>{step.text}</b><small><span className={"goal-dot "+step.category}></span>{step.goalTitle}</small></span><span className="tap-hint">DONE</span>
-              </button>)}
-              {!todaySteps.length && <div className="today-empty"><CheckCircle2 size={28}/><b>You’re clear for today.</b><span>Add a next step to one of your 90-day goals.</span></div>}
-            </div>
-            <div className="standards-card"><div className="standards-head"><ShieldCheck size={20}/><div><b>Daily Standards</b><small>The habits that stay steady</small></div></div>{standards.map(s => <button key={s.id} className={"standard "+(s.done?"done":"")} onClick={() => setStandards(old => old.map(x => x.id===s.id?{...x,done:!x.done}:x))}><CheckCircle2 size={18}/><span>{s.text}</span></button>)}</div>
+          <div className="section-title"><div><p className="eyebrow">TODAY</p><h2>Your Top 3 Moves</h2><p>Focus on the few actions that make the biggest goals move. Unfinished actions roll forward.</p></div><span className="rollover"><RotateCcw size={14}/> Rolls forward</span></div>
+          <div className="move-cards">
+            {todaySteps.map((step,index) => <article className={"move-card "+step.category} key={step.id}>
+              <div className="move-top"><span className="move-number">0{index+1}</span><span className={"category "+step.category}>{categories.find(c=>c.id===step.category)?.label}</span></div>
+              <h3>{step.text}</h3>
+              <div className="linked-goal"><Target size={15}/><div><small>MOVES THIS 90-DAY GOAL</small><b>{step.goalTitle}</b></div></div>
+              <div className="move-progress"><div><span>Goal progress</span><b>{step.progress}%</b></div><div className="mini-bar"><i style={{width:step.progress+"%"}}></i></div></div>
+              <button className="complete-move" onClick={() => togglePriority(step.goalId,step.id)}><CheckCircle2 size={20}/> Complete this move</button>
+            </article>)}
+            {!todaySteps.length && <div className="today-empty"><CheckCircle2 size={28}/><b>You’re clear for today.</b><span>Add a next step to one of your 90-day goals.</span></div>}
           </div>
+          <div className="standards-strip"><div className="standards-title"><ShieldCheck size={20}/><div><b>Daily Standards</b><small>Your baseline — steady, repeatable, consistent</small></div></div><div className="standards-pills">{standards.map(s=><button key={s.id} className={"standard-pill "+(s.done?"done":"")} onClick={()=>setStandards(old=>old.map(x=>x.id===s.id?{...x,done:!x.done}:x))}><CheckCircle2 size={17}/><span>{s.text}</span></button>)}</div></div>
         </section>
 
         <section className="quote"><span>“</span><p>{quotes[quoteIndex]}</p><small>MINDSET • DISCIPLINE • EXECUTION</small></section>
