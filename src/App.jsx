@@ -111,24 +111,10 @@ export default function App() {
       </aside>
 
       <main>
-        <section className="hero">
-          <div className="hero-copy">
-            <p className="eyebrow">90-DAY EXECUTION SYSTEM</p>
-            <h1>Turn intention<br/>into <em>action.</em></h1>
-            <p className="sub">Set the destination. Build the path. Win the next step.</p>
-            <button className="primary" onClick={newGoal}><Plus size={18}/> Add 90-Day Goal</button>
-          </div>
-          <div className="journey-graphic" aria-hidden="true">
-            <div className="sun"></div>
-            <div className="mountain mountain-back"></div>
-            <div className="mountain mountain-mid"></div>
-            <div className="mountain mountain-front"></div>
-            <div className="peak-flag">◆</div>
-            <div className="path"></div>
-            <div className="path path-inner"></div>
-            <div className="journey-label"><span>VISION</span><i></i><b>ACTION</b></div>
-          </div>
-        </section>
+        <header className="compact-head">
+          <div><p className="eyebrow">90-DAY EXECUTION SYSTEM</p><h1>Turn intention into action.</h1><p className="sub">Big goals become real through the next right actions.</p></div>
+          <button className="primary" onClick={newGoal}><Plus size={18}/> Add 90-Day Goal</button>
+        </header>
 
         <section className="quote"><span>“</span><p>{quotes[quoteIndex]}</p><small>MINDSET • DISCIPLINE • EXECUTION</small></section>
 
@@ -156,7 +142,8 @@ export default function App() {
               {goal.why && <p className="why">{goal.why}</p>}
               <div className="progress-row"><span>Goal progress</span><b>{goal.progress}%</b></div>
               <div className="bar"><i style={{width: goal.progress + "%"}} /></div>
-              <div className="priority-head"><b>Most Important Next Steps</b><span>{done}/{goal.priorities.length}</span></div>
+              <div className="next-step-link"><span className={"goal-dot " + goal.category}></span><div><small>WORKING TOWARD</small><b>{goal.title}</b></div></div>
+              <div className="priority-head"><b>Next Steps</b><span>{done}/{goal.priorities.length}</span></div>
               <div className="priority-list">
                 {goal.priorities.map(p => <button key={p.id} className={"priority " + (p.done ? "done" : "")} onClick={() => togglePriority(goal.id, p.id)}>
                   <CheckCircle2 size={19}/><span>{p.text}</span>
