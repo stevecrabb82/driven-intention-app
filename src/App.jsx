@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Target, Flame, CheckCircle2, X, Save } from "lucide-react";
+import { Plus, Pencil, Trash2, Target, Flame, CheckCircle2, X, Save, RotateCcw, CalendarDays, ShieldCheck } from "lucide-react";
 
 const categories = [
   { id: "business", label: "Business" },
@@ -36,6 +36,13 @@ export default function App() {
   const [active, setActive] = useState("all");
   const [editing, setEditing] = useState(null);
   const [quoteIndex, setQuoteIndex] = useState(0);
+  const [standards, setStandards] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("driven-intention-standards")) || [
+      {id: crypto.randomUUID(), text: "Move my body / train", done:false},
+      {id: crypto.randomUUID(), text: "Review today’s priorities", done:false},
+      {id: crypto.randomUUID(), text: "Do one thing that moves a 90-day goal", done:false}
+    ]; } catch { return []; }
+  });
 
   const quotes = [
     "Clarity creates momentum. Decide what matters, then move.",
@@ -47,6 +54,10 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("driven-intention-goals", JSON.stringify(goals));
   }, [goals]);
+
+  useEffect(() => {
+    localStorage.setItem("driven-intention-standards", JSON.stringify(standards));
+  }, [standards]);
 
   useEffect(() => {
     const t = setInterval(() => setQuoteIndex(i => (i + 1) % quotes.length), 9000);
@@ -61,6 +72,7 @@ export default function App() {
   const completedPriorities = goals.flatMap(g => g.priorities).filter(p => p.done).length;
   const totalPriorities = goals.flatMap(g => g.priorities).length;
   const score = totalPriorities ? Math.round((completedPriorities / totalPriorities) * 100) : 0;
+  const todaySteps = goals.flatMap(g => g.priorities.filter(p => !p.done).map(p => ({...p, goalId:g.id, goalTitle:g.title, category:g.category}))).slice(0,5);
 
   function newGoal() {
     setEditing({
@@ -116,6 +128,19 @@ export default function App() {
           <button className="primary" onClick={newGoal}><Plus size={18}/> Add 90-Day Goal</button>
         </header>
 
+        <section className="today-board">
+          <div className="section-title"><div><p className="eyebrow">TODAY</p><h2>Next Steps</h2><p>Finish the actions that move the big goals forward. Anything unfinished rolls into tomorrow.</p></div><span className="rollover"><RotateCcw size={14}/> Auto-rollover</span></div>
+          <div className="today-grid">
+            <div className="action-stack">
+              {todaySteps.map(step => <button className="today-action" key={step.id} onClick={() => togglePriority(step.goalId, step.id)}>
+                <span className="action-check"><CheckCircle2 size={24}/></span><span className="action-copy"><b>{step.text}</b><small><span className={"goal-dot "+step.category}></span>{step.goalTitle}</small></span><span className="tap-hint">DONE</span>
+              </button>)}
+              {!todaySteps.length && <div className="today-empty"><CheckCircle2 size={28}/><b>You’re clear for today.</b><span>Add a next step to one of your 90-day goals.</span></div>}
+            </div>
+            <div className="standards-card"><div className="standards-head"><ShieldCheck size={20}/><div><b>Daily Standards</b><small>The habits that stay steady</small></div></div>{standards.map(s => <button key={s.id} className={"standard "+(s.done?"done":"")} onClick={() => setStandards(old => old.map(x => x.id===s.id?{...x,done:!x.done}:x))}><CheckCircle2 size={18}/><span>{s.text}</span></button>)}</div>
+          </div>
+        </section>
+
         <section className="quote"><span>“</span><p>{quotes[quoteIndex]}</p><small>MINDSET • DISCIPLINE • EXECUTION</small></section>
 
         <section className="stats">
@@ -124,10 +149,10 @@ export default function App() {
           <div><small>EXECUTION SCORE</small><strong>{score}%</strong><p>Based on completed priorities</p></div>
         </section>
 
-        <div className="filters">
+        <div className="goals-label"><div><p className="eyebrow">THE BIG PICTURE</p><h2>90-Day Goals</h2></div><div className="filters">
           <button className={active === "all" ? "selected" : ""} onClick={() => setActive("all")}>All</button>
           {categories.map(c => <button key={c.id} className={active === c.id ? "selected" : ""} onClick={() => setActive(c.id)}>{c.label}</button>)}
-        </div>
+        </div></div>
 
         <section className="goal-grid">
           {shown.map(goal => {
