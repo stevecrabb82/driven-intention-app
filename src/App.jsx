@@ -95,7 +95,7 @@ export default function App() {
   return (
     <div className="app-shell">
       <aside>
-        <div className="brand"><span>DI</span><div><b>Driven</b><small>INTENTION</small></div></div>
+        <div className="brand"><div className="brand-mark"><span className="wing left">⌁</span><span className="summit">▲</span><span className="wing right">⌁</span></div><div><b>DRIVEN</b><small>INTENTION</small></div></div>
         <nav>
           <button className="nav-active"><Target size={18}/> 90-Day Goals</button>
           <button disabled>Weekly Scorecard <em>Soon</em></button>
@@ -111,12 +111,26 @@ export default function App() {
       </aside>
 
       <main>
-        <header>
-          <div><p className="eyebrow">90-DAY EXECUTION SYSTEM</p><h1>Turn intention into action.</h1><p className="sub">Set the outcomes. Identify the next priorities. Track what you actually do.</p></div>
-          <button className="primary" onClick={newGoal}><Plus size={18}/> Add 90-Day Goal</button>
-        </header>
+        <section className="hero">
+          <div className="hero-copy">
+            <p className="eyebrow">90-DAY EXECUTION SYSTEM</p>
+            <h1>Turn intention<br/>into <em>action.</em></h1>
+            <p className="sub">Set the destination. Build the path. Win the next step.</p>
+            <button className="primary" onClick={newGoal}><Plus size={18}/> Add 90-Day Goal</button>
+          </div>
+          <div className="journey-graphic" aria-hidden="true">
+            <div className="sun"></div>
+            <div className="mountain mountain-back"></div>
+            <div className="mountain mountain-mid"></div>
+            <div className="mountain mountain-front"></div>
+            <div className="peak-flag">◆</div>
+            <div className="path"></div>
+            <div className="path path-inner"></div>
+            <div className="journey-label"><span>VISION</span><i></i><b>ACTION</b></div>
+          </div>
+        </section>
 
-        <section className="quote"><span>“</span><p>{quotes[quoteIndex]}</p></section>
+        <section className="quote"><span>“</span><p>{quotes[quoteIndex]}</p><small>MINDSET • DISCIPLINE • EXECUTION</small></section>
 
         <section className="stats">
           <div><small>ACTIVE GOALS</small><strong>{goals.length}</strong><p>Across every area of life</p></div>
