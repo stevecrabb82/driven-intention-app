@@ -104,6 +104,7 @@ export default function App() {
   });
   const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(dateKey(today));
+  const [activePage, setActivePage] = useState("home");
 
   useEffect(() => localStorage.setItem("driven-intention-goals", JSON.stringify(goals)), [goals]);
   useEffect(() => localStorage.setItem("driven-intention-standards", JSON.stringify(standards)), [standards]);
@@ -199,19 +200,19 @@ export default function App() {
         </div>
 
         <nav className="main-nav">
-          <button className="nav-active"><Home size={20}/> Home</button>
-          <button><Target size={20}/> My Goals</button>
-          <button><ListTodo size={20}/> Next Steps</button>
-          <button><CalendarDays size={20}/> Calendar</button>
-          <button><CheckCircle2 size={20}/> Daily Standards</button>
-          <button><BarChart3 size={20}/> Progress</button>
-          <button><DollarSign size={20}/> Finances</button>
-          <button><FolderKanban size={20}/> Projects</button>
-          <button><FileText size={20}/> Notes & Docs</button>
-          <button><Users size={20}/> Accountability</button>
+          <button className={activePage==="home"?"nav-active":""} onClick={()=>setActivePage("home")}><Home size={20}/> Home</button>
+          <button className={activePage==="goals"?"nav-active":""} onClick={()=>setActivePage("goals")}><Target size={20}/> My Goals</button>
+          <button className={activePage==="steps"?"nav-active":""} onClick={()=>setActivePage("steps")}><ListTodo size={20}/> Next Steps</button>
+          <button className={activePage==="calendar"?"nav-active":""} onClick={()=>setActivePage("calendar")}><CalendarDays size={20}/> Calendar</button>
+          <button className={activePage==="standards"?"nav-active":""} onClick={()=>setActivePage("standards")}><CheckCircle2 size={20}/> Daily Standards</button>
+          <button className={activePage==="progress"?"nav-active":""} onClick={()=>setActivePage("progress")}><BarChart3 size={20}/> Progress</button>
+          <button className={activePage==="finances"?"nav-active":""} onClick={()=>setActivePage("finances")}><DollarSign size={20}/> Finances</button>
+          <button className={activePage==="projects"?"nav-active":""} onClick={()=>setActivePage("projects")}><FolderKanban size={20}/> Projects</button>
+          <button className={activePage==="notes"?"nav-active":""} onClick={()=>setActivePage("notes")}><FileText size={20}/> Notes & Docs</button>
+          <button className={activePage==="accountability"?"nav-active":""} onClick={()=>setActivePage("accountability")}><Users size={20}/> Accountability</button>
           <div className="nav-divider"/>
-          <button><Settings size={20}/> Settings</button>
-          <button><HelpCircle size={20}/> Help</button>
+          <button className={activePage==="settings"?"nav-active":""} onClick={()=>setActivePage("settings")}><Settings size={20}/> Settings</button>
+          <button className={activePage==="help"?"nav-active":""} onClick={()=>setActivePage("help")}><HelpCircle size={20}/> Help</button>
         </nav>
 
         <div className="values">
@@ -233,7 +234,8 @@ export default function App() {
           </div>
         </header>
 
-        <div className="dashboard-grid">
+        {activePage === "home" ? (
+<div className="dashboard-grid">
           <main className="dashboard-center">
             <section className="panel moves-panel">
               <div className="panel-heading">
@@ -362,6 +364,66 @@ export default function App() {
             </section>
           </aside>
         </div>
+        ) : activePage === "goals" ? (
+          <section className="page-shell">
+            <div className="page-title"><div><p>BIG VISION</p><h2>My 90-Day Goals</h2><span>Set the outcome, then keep the next move visible.</span></div><button className="gold-btn" onClick={newGoal}><Plus size={18}/> Add Goal</button></div>
+            <div className="goals-page-grid">
+              {goals.map(goal => <article className="goal-page-card" key={goal.id}>
+                <div className="compact-goal-top"><span className={"mini-icon "+goal.category}><Target size={17}/></span><small>{categories.find(c=>c.id===goal.category)?.label}</small><button className="icon" onClick={()=>setEditing({...goal})}><Pencil size={16}/></button></div>
+                <h3>{goal.title}</h3><p>{goal.why}</p>
+                <div className="goal-page-progress"><strong>{goal.progress}%</strong><span>complete</span></div>
+                <div className="goal-progress"><i style={{width:goal.progress+"%"}}/></div>
+                <div className="goal-next"><small>NEXT MOVE</small><b>{goal.priorities.find(p=>!p.done)?.text || "Add a next step"}</b></div>
+              </article>)}
+            </div>
+          </section>
+        ) : activePage === "steps" ? (
+          <section className="page-shell">
+            <div className="page-title"><div><p>ACTION</p><h2>Next Steps</h2><span>Every action stays connected to the goal it moves forward.</span></div></div>
+            <div className="steps-page-grid">
+              {incompleteGoalMoves.map(move => <article className="step-page-card" key={move.id}>
+                <span className={"mini-icon "+move.category}><ListTodo size={17}/></span>
+                <div><small>{categories.find(c=>c.id===move.category)?.label}</small><h3>{move.text}</h3><p><Target size={13}/> {move.goalTitle}</p></div>
+                <button className="complete-round" onClick={()=>completeMove(move)}><CheckCircle2 size={22}/></button>
+              </article>)}
+            </div>
+          </section>
+        ) : activePage === "calendar" ? (
+          <section className="page-shell">
+            <div className="page-title"><div><p>PLAN WITH PURPOSE</p><h2>Calendar</h2><span>Schedule the actions that move your goals forward.</span></div><button className="gold-btn" onClick={addCalendarEvent}><Plus size={18}/> Add Event</button></div>
+            <div className="calendar-page-layout">
+              <section className="calendar-card large-calendar">
+                <div className="calendar-head"><h3>{month.toLocaleDateString("en-US",{month:"long",year:"numeric"})}</h3><div><button onClick={()=>setMonth(new Date(year,monthIndex-1,1))}>‹</button><button onClick={()=>setMonth(new Date(year,monthIndex+1,1))}>›</button></div></div>
+                <div className="weekday-row">{["SUN","MON","TUE","WED","THU","FRI","SAT"].map(d=><span key={d}>{d}</span>)}</div>
+                <div className="calendar-grid">{monthCells.map((day,idx)=>{if(!day)return <span key={idx} className="blank"></span>;const key=`${year}-${pad(monthIndex+1)}-${pad(day)}`;const hasEvent=events.some(e=>e.date===key&&!e.done);return <button key={idx} className={(key===selectedDate?"selected ":"")+(key===dateKey(today)?"today ":"")} onClick={()=>setSelectedDate(key)}>{day}{hasEvent&&<i/>}</button>})}</div>
+              </section>
+              <section className="panel day-agenda"><h3>{selectedDate===dateKey(today)?"Today":"Selected Day"}</h3>{selectedEvents.length?selectedEvents.map(e=><div className="agenda-item" key={e.id}><CalendarDays size={18}/><div><b>{e.title}</b><span>{e.time||"Anytime"}</span><small>{goals.find(g=>g.id===e.goalId)?.title||"Not linked to a goal"}</small></div></div>):<p className="no-items">Nothing scheduled yet.</p>}</section>
+            </div>
+          </section>
+        ) : activePage === "standards" ? (
+          <section className="page-shell">
+            <div className="page-title"><div><p>THE NON-NEGOTIABLES</p><h2>Daily Standards</h2><span>Keep the habits that define who you are becoming.</span></div></div>
+            <div className="standards-page-grid">{standards.map(s=><button key={s.id} className={"standard-page-card "+(s.done?"done":"")} onClick={()=>setStandards(old=>old.map(x=>x.id===s.id?{...x,done:!x.done}:x))}><span className="standard-icon"><StandardIcon type={s.icon} size={30}/></span><h3>{s.text}</h3><p>{s.done?"Complete today":"Tap when complete"}</p><CheckCircle2 size={24}/></button>)}</div>
+          </section>
+        ) : activePage === "progress" ? (
+          <section className="page-shell">
+            <div className="page-title"><div><p>MEASURED DAILY</p><h2>Progress</h2><span>See whether your daily execution is matching your intentions.</span></div></div>
+            <div className="progress-page-grid">
+              <article className="metric-card"><span>GOALS</span><strong>{goals.length}</strong><p>Active 90-day outcomes</p></article>
+              <article className="metric-card"><span>NEXT STEPS DONE</span><strong>{goals.flatMap(g=>g.priorities).filter(p=>p.done).length}</strong><p>Completed actions</p></article>
+              <article className="metric-card"><span>STANDARDS TODAY</span><strong>{standards.filter(s=>s.done).length}/{standards.length}</strong><p>Daily consistency</p></article>
+              <article className="metric-card"><span>STREAK</span><strong>{streak}</strong><p>Days of momentum</p></article>
+            </div>
+            <section className="panel progress-goals"><h3>90-Day Goal Progress</h3>{goals.map(g=><div className="progress-line" key={g.id}><span>{g.title}</span><b>{g.progress}%</b><div className="goal-progress"><i style={{width:g.progress+"%"}}/></div></div>)}</section>
+          </section>
+        ) : (
+          <section className="page-shell coming-page">
+            <div className="coming-icon">{activePage==="finances"?<DollarSign size={34}/>:activePage==="projects"?<FolderKanban size={34}/>:activePage==="notes"?<FileText size={34}/>:activePage==="accountability"?<Users size={34}/>:activePage==="settings"?<Settings size={34}/>:<HelpCircle size={34}/>}</div>
+            <p>COMING NEXT</p><h2>{activePage==="finances"?"Finances":activePage==="projects"?"Projects":activePage==="notes"?"Notes & Docs":activePage==="accountability"?"Accountability":activePage==="settings"?"Settings":"Help"}</h2>
+            <span>This section is wired into the sidebar now. We’ll build the working tools here next.</span>
+            <button className="gold-btn" onClick={()=>setActivePage("home")}>Back to Home</button>
+          </section>
+        )}
 
         <footer className="brand-footer">
           <div><b>A MORE INTENTIONAL YOU.</b><b>A BRIGHTER TOMORROW.</b></div>
