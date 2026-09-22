@@ -1,10 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Target, Flame, CheckCircle2, X, Save, RotateCcw, CalendarDays, ShieldCheck } from "lucide-react";
+import {
+  Plus, Pencil, Trash2, Target, Flame, CheckCircle2, X, Save, RotateCcw,
+  CalendarDays, ShieldCheck, Home, ListTodo, BarChart3, DollarSign, FolderKanban,
+  FileText, Users, Settings, HelpCircle, BookOpen, Dumbbell, Apple, Droplets,
+  Brain, Sun, Moon, ChevronRight, Bell, Clock, BriefcaseBusiness
+} from "lucide-react";
 
 const categories = [
   { id: "business", label: "Business" },
-  { id: "health", label: "Health & Fitness" },
   { id: "financial", label: "Financial" },
+  { id: "health", label: "Health" },
   { id: "personal", label: "Personal" },
 ];
 
@@ -12,14 +17,49 @@ const starter = [
   {
     id: crypto.randomUUID(),
     category: "business",
-    title: "Build the next 90 days around the highest-value opportunities",
-    why: "Create focus, momentum, and measurable progress.",
-    progress: 25,
+    title: "Close Hampton 75-Home Community",
+    why: "Move the biggest development opportunity forward.",
+    progress: 40,
     priorities: [
-      { id: crypto.randomUUID(), text: "Choose the top 3 outcomes for this quarter", done: true },
-      { id: crypto.randomUUID(), text: "Block weekly time for the most important next steps", done: false },
+      { id: crypto.randomUUID(), text: "Finalize site plan", done: false },
+      { id: crypto.randomUUID(), text: "Make 5 investor calls", done: false },
     ],
   },
+  {
+    id: crypto.randomUUID(),
+    category: "financial",
+    title: "Increase Net Worth by $500K",
+    why: "Create more financial freedom and optionality.",
+    progress: 35,
+    priorities: [{ id: crypto.randomUUID(), text: "Review refi opportunities", done: false }],
+  },
+  {
+    id: crypto.randomUUID(),
+    category: "health",
+    title: "Get to 180 lbs",
+    why: "Be in the best shape of my life.",
+    progress: 60,
+    priorities: [{ id: crypto.randomUUID(), text: "Workout (Lift + Sauna)", done: false }],
+  },
+  {
+    id: crypto.randomUUID(),
+    category: "personal",
+    title: "Be the Best Husband and Father",
+    why: "Make family the reason the work matters.",
+    progress: 50,
+    priorities: [{ id: crypto.randomUUID(), text: "Read 10 pages", done: false }],
+  },
+];
+
+const standardDefaults = [
+  { id: "steps", text: "10K Steps", icon: "steps", done: false },
+  { id: "lift", text: "Lift / Sauna", icon: "lift", done: false },
+  { id: "nutrition", text: "Clean Nutrition", icon: "nutrition", done: false },
+  { id: "hydrate", text: "Hydrate", icon: "hydrate", done: false },
+  { id: "mindset", text: "Mindset / Prayer", icon: "mindset", done: false },
+  { id: "read", text: "Read", icon: "read", done: false },
+  { id: "am", text: "AM Review", icon: "am", done: false },
+  { id: "pm", text: "PM Review", icon: "pm", done: false },
 ];
 
 function loadGoals() {
@@ -31,58 +71,73 @@ function loadGoals() {
   }
 }
 
+function loadStandards() {
+  try {
+    const raw = JSON.parse(localStorage.getItem("driven-intention-standards"));
+    if (!Array.isArray(raw) || raw.length < 5) return standardDefaults;
+    return raw;
+  } catch {
+    return standardDefaults;
+  }
+}
+
+const pad = n => String(n).padStart(2, "0");
+const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const today = new Date();
+
+function StandardIcon({ type, size = 24 }) {
+  const map = {
+    steps: Flame, lift: Dumbbell, nutrition: Apple, hydrate: Droplets,
+    mindset: Brain, read: BookOpen, am: Sun, pm: Moon,
+  };
+  const Icon = map[type] || CheckCircle2;
+  return <Icon size={size}/>;
+}
+
 export default function App() {
   const [goals, setGoals] = useState(loadGoals);
-  const [active, setActive] = useState("all");
   const [editing, setEditing] = useState(null);
-  const [quoteIndex, setQuoteIndex] = useState(0);
-  const [standards, setStandards] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("driven-intention-standards")) || [
-      {id: crypto.randomUUID(), text: "Move my body / train", done:false},
-      {id: crypto.randomUUID(), text: "Review today’s priorities", done:false},
-      {id: crypto.randomUUID(), text: "Do one thing that moves a 90-day goal", done:false}
-    ]; } catch { return []; }
+  const [standards, setStandards] = useState(loadStandards);
+  const [events, setEvents] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("driven-intention-events")) || []; }
+    catch { return []; }
   });
+  const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [selectedDate, setSelectedDate] = useState(dateKey(today));
 
-  const quotes = [
-    "Clarity creates momentum. Decide what matters, then move.",
-    "You do not need the whole staircase. Win the next step.",
-    "Your standards shape your future more than your circumstances.",
-    "Consistency on the lead measures creates the lag results.",
-  ];
+  useEffect(() => localStorage.setItem("driven-intention-goals", JSON.stringify(goals)), [goals]);
+  useEffect(() => localStorage.setItem("driven-intention-standards", JSON.stringify(standards)), [standards]);
+  useEffect(() => localStorage.setItem("driven-intention-events", JSON.stringify(events)), [events]);
 
-  useEffect(() => {
-    localStorage.setItem("driven-intention-goals", JSON.stringify(goals));
-  }, [goals]);
-
-  useEffect(() => {
-    localStorage.setItem("driven-intention-standards", JSON.stringify(standards));
-  }, [standards]);
-
-  useEffect(() => {
-    const t = setInterval(() => setQuoteIndex(i => (i + 1) % quotes.length), 9000);
-    return () => clearInterval(t);
-  }, []);
-
-  const shown = useMemo(
-    () => active === "all" ? goals : goals.filter(g => g.category === active),
-    [goals, active]
+  const incompleteGoalMoves = useMemo(
+    () => goals.flatMap(g => g.priorities.filter(p => !p.done).map(p => ({
+      ...p, type: "goal", goalId: g.id, goalTitle: g.title, category: g.category, progress: g.progress
+    }))),
+    [goals]
   );
 
-  const completedPriorities = goals.flatMap(g => g.priorities).filter(p => p.done).length;
-  const totalPriorities = goals.flatMap(g => g.priorities).length;
-  const score = totalPriorities ? Math.round((completedPriorities / totalPriorities) * 100) : 0;
-  const todaySteps = goals.flatMap(g => g.priorities.filter(p => !p.done).map(p => ({...p, goalId:g.id, goalTitle:g.title, category:g.category, progress:g.progress}))).slice(0,3);
+  const todayEvents = useMemo(
+    () => events.filter(e => e.date === dateKey(today) && !e.done),
+    [events]
+  );
+
+  const topMoves = useMemo(() => {
+    const scheduled = todayEvents.map(e => {
+      const g = goals.find(x => x.id === e.goalId);
+      return {
+        id: e.id, text: e.title, type: "event", category: g?.category || "personal",
+        goalTitle: g?.title || "Calendar", progress: g?.progress || 0, time: e.time || ""
+      };
+    });
+    return [...scheduled, ...incompleteGoalMoves].slice(0, 3);
+  }, [todayEvents, goals, incompleteGoalMoves]);
+
+  const streak = 7;
 
   function newGoal() {
     setEditing({
-      id: crypto.randomUUID(),
-      category: active === "all" ? "business" : active,
-      title: "",
-      why: "",
-      progress: 0,
-      priorities: [],
-      isNew: true,
+      id: crypto.randomUUID(), category: "business", title: "", why: "",
+      progress: 0, priorities: [], isNew: true,
     });
   }
 
@@ -104,99 +159,224 @@ export default function App() {
     } : g));
   }
 
+  function completeMove(move) {
+    if (move.type === "event") {
+      setEvents(old => old.map(e => e.id === move.id ? { ...e, done: true } : e));
+    } else {
+      togglePriority(move.goalId, move.id);
+    }
+  }
+
+  function addCalendarEvent() {
+    const title = prompt("What should be on your calendar?");
+    if (!title?.trim()) return;
+    const time = prompt("What time? (optional, for example 9:00 AM)") || "";
+    let goalId = "";
+    if (goals.length) {
+      const choices = goals.map((g, i) => `${i+1}. ${g.title}`).join("\n");
+      const pick = prompt(`Which 90-day goal does this move forward?\n${choices}\n\nEnter a number, or leave blank.`);
+      const idx = Number(pick) - 1;
+      if (Number.isInteger(idx) && goals[idx]) goalId = goals[idx].id;
+    }
+    setEvents(old => [...old, { id: crypto.randomUUID(), title: title.trim(), date: selectedDate, time, goalId, done: false }]);
+  }
+
+  const year = month.getFullYear();
+  const monthIndex = month.getMonth();
+  const firstDay = new Date(year, monthIndex, 1).getDay();
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const monthCells = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
+  while (monthCells.length % 7) monthCells.push(null);
+
+  const selectedEvents = events.filter(e => e.date === selectedDate && !e.done);
+  const currentDateLabel = today.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+
   return (
-    <div className="app-shell">
-      <aside>
-        <div className="brand"><div className="brand-mark"><span className="wing left">⌁</span><span className="summit">▲</span><span className="wing right">⌁</span></div><div><b>DRIVEN</b><small>INTENTION</small></div></div>
-        <nav>
-          <button className="nav-active"><Target size={18}/> 90-Day Goals</button>
-          <button disabled>Weekly Scorecard <em>Soon</em></button>
-          <button disabled>Accountability <em>Soon</em></button>
-          <button disabled>Net Worth <em>Soon</em></button>
-          <button disabled>Receipts & Projects <em>Soon</em></button>
+    <div className="app-shell brand-shell">
+      <aside className="brand-sidebar">
+        <div className="logo-wrap">
+          <div className="brand-logo" aria-label="Driven Intention logo"/>
+        </div>
+
+        <nav className="main-nav">
+          <button className="nav-active"><Home size={20}/> Home</button>
+          <button><Target size={20}/> My Goals</button>
+          <button><ListTodo size={20}/> Next Steps</button>
+          <button><CalendarDays size={20}/> Calendar</button>
+          <button><CheckCircle2 size={20}/> Daily Standards</button>
+          <button><BarChart3 size={20}/> Progress</button>
+          <button><DollarSign size={20}/> Finances</button>
+          <button><FolderKanban size={20}/> Projects</button>
+          <button><FileText size={20}/> Notes & Docs</button>
+          <button><Users size={20}/> Accountability</button>
+          <div className="nav-divider"/>
+          <button><Settings size={20}/> Settings</button>
+          <button><HelpCircle size={20}/> Help</button>
         </nav>
-        <div className="sidebar-note">
-          <Flame size={20}/>
-          <b>Build the life on purpose.</b>
-          <p>Focus on the actions you control. The results follow.</p>
+
+        <div className="values">
+          <span>PURPOSE</span><span>DISCIPLINE</span><span>GROWTH</span>
+          <span>FREEDOM</span><span>FAITH</span><span>LEGACY</span>
         </div>
       </aside>
 
-      <main>
-        <header className="compact-head">
-          <div><p className="eyebrow">90-DAY EXECUTION SYSTEM</p><h1>Turn intention into action.</h1><p className="sub">Big goals become real through the next right actions.</p></div>
-          <button className="primary" onClick={newGoal}><Plus size={18}/> Add 90-Day Goal</button>
+      <div className="app-main">
+        <header className="brand-header">
+          <div>
+            <h1>Good Morning, Steve</h1>
+            <p>TURN INTENTION INTO ACTION.</p>
+          </div>
+          <div className="header-right">
+            <span>{currentDateLabel}</span>
+            <Bell size={20}/>
+            <span className="avatar">SC</span>
+          </div>
         </header>
 
-        <section className="today-board">
-          <div className="section-title"><div><p className="eyebrow">TODAY</p><h2>Your Top 3 Moves</h2><p>Focus on the few actions that make the biggest goals move. Unfinished actions roll forward.</p></div><span className="rollover"><RotateCcw size={14}/> Rolls forward</span></div>
-          <div className="move-cards">
-            {todaySteps.map((step,index) => <article className={"move-card "+step.category} key={step.id}>
-              <div className="move-top"><span className="move-number">0{index+1}</span><span className={"category "+step.category}>{categories.find(c=>c.id===step.category)?.label}</span></div>
-              <h3>{step.text}</h3>
-              <div className="linked-goal"><Target size={15}/><div><small>MOVES THIS 90-DAY GOAL</small><b>{step.goalTitle}</b></div></div>
-              <div className="move-progress"><div><span>Goal progress</span><b>{step.progress}%</b></div><div className="mini-bar"><i style={{width:step.progress+"%"}}></i></div></div>
-              <button className="complete-move" onClick={() => togglePriority(step.goalId,step.id)}><CheckCircle2 size={20}/> Complete this move</button>
-            </article>)}
-            {!todaySteps.length && <div className="today-empty"><CheckCircle2 size={28}/><b>You’re clear for today.</b><span>Add a next step to one of your 90-day goals.</span></div>}
-          </div>
-          <div className="standards-strip"><div className="standards-title"><ShieldCheck size={20}/><div><b>Daily Standards</b><small>Your baseline — steady, repeatable, consistent</small></div></div><div className="standards-pills">{standards.map(s=><button key={s.id} className={"standard-pill "+(s.done?"done":"")} onClick={()=>setStandards(old=>old.map(x=>x.id===s.id?{...x,done:!x.done}:x))}><CheckCircle2 size={17}/><span>{s.text}</span></button>)}</div></div>
-        </section>
-
-        <section className="quote"><span>“</span><p>{quotes[quoteIndex]}</p><small>MINDSET • DISCIPLINE • EXECUTION</small></section>
-
-        <section className="stats">
-          <div><small>ACTIVE GOALS</small><strong>{goals.length}</strong><p>Across every area of life</p></div>
-          <div><small>PRIORITIES COMPLETE</small><strong>{completedPriorities}/{totalPriorities}</strong><p>Most important next steps</p></div>
-          <div><small>EXECUTION SCORE</small><strong>{score}%</strong><p>Based on completed priorities</p></div>
-        </section>
-
-        <div className="goals-label"><div><p className="eyebrow">THE BIG PICTURE</p><h2>90-Day Goals</h2></div><div className="filters">
-          <button className={active === "all" ? "selected" : ""} onClick={() => setActive("all")}>All</button>
-          {categories.map(c => <button key={c.id} className={active === c.id ? "selected" : ""} onClick={() => setActive(c.id)}>{c.label}</button>)}
-        </div></div>
-
-        <section className="goal-grid">
-          {shown.map(goal => {
-            const cat = categories.find(c => c.id === goal.category);
-            const done = goal.priorities.filter(p => p.done).length;
-            return <article className="goal-card" key={goal.id}>
-              <div className="goal-top">
-                <span className={"category " + goal.category}>{cat?.label}</span>
-                <div><button className="icon" onClick={() => setEditing({...goal})}><Pencil size={16}/></button><button className="icon danger" onClick={() => deleteGoal(goal.id)}><Trash2 size={16}/></button></div>
+        <div className="dashboard-grid">
+          <main className="dashboard-center">
+            <section className="panel moves-panel">
+              <div className="panel-heading">
+                <div className="heading-icon"><CheckCircle2 size={25}/></div>
+                <div>
+                  <p>TODAY</p>
+                  <h2>Your Top 3 Moves</h2>
+                  <span>Small steps. Big results.</span>
+                </div>
+                <button className="gold-btn" onClick={() => goals[0] && setEditing({...goals[0], addPriorityNow:true})}><Plus size={18}/> Add Next Step</button>
               </div>
-              <h2>{goal.title}</h2>
-              {goal.why && <p className="why">{goal.why}</p>}
-              <div className="progress-row"><span>Goal progress</span><b>{goal.progress}%</b></div>
-              <div className="bar"><i style={{width: goal.progress + "%"}} /></div>
-              <div className="next-step-link"><span className={"goal-dot " + goal.category}></span><div><small>WORKING TOWARD</small><b>{goal.title}</b></div></div>
-              <div className="priority-head"><b>Next Steps</b><span>{done}/{goal.priorities.length}</span></div>
-              <div className="priority-list">
-                {goal.priorities.map(p => <button key={p.id} className={"priority " + (p.done ? "done" : "")} onClick={() => togglePriority(goal.id, p.id)}>
-                  <CheckCircle2 size={19}/><span>{p.text}</span>
-                </button>)}
-                {!goal.priorities.length && <p className="empty">No priorities yet. Edit this goal to add your next steps.</p>}
-              </div>
-              <button className="add-priority" onClick={() => setEditing({...goal, addPriorityNow: true})}><Plus size={16}/> Add Priority</button>
-            </article>
-          })}
-          {!shown.length && <div className="empty-state"><Target size={30}/><h3>No goals here yet.</h3><p>Add a 90-day goal and turn it into concrete next steps.</p><button className="primary" onClick={newGoal}><Plus size={18}/> Add Goal</button></div>}
-        </section>
-      </main>
 
-      {editing && <GoalModal goal={editing} onClose={() => setEditing(null)} onSave={saveGoal}/>}
+              <div className="top-moves-grid">
+                {topMoves.map((move, i) => (
+                  <article className="top-move" key={move.id}>
+                    <div className="top-move-head">
+                      <div className={"move-icon " + move.category}>
+                        {move.type === "event" ? <CalendarDays size={25}/> : move.category === "health" ? <Dumbbell size={25}/> : move.category === "personal" ? <BookOpen size={25}/> : <BriefcaseBusiness size={25}/>}
+                      </div>
+                      <div className="move-title">
+                        <small>{categories.find(c => c.id === move.category)?.label || "Personal"}</small>
+                        <h3>{move.text}</h3>
+                        <span>{move.time || (move.category === "health" ? "30–45 minutes" : "Move it forward today")}</span>
+                      </div>
+                      <ChevronRight size={20}/>
+                    </div>
+                    <div className="moves-toward">
+                      <span>Moves You Toward:</span>
+                      <b>{move.goalTitle}</b>
+                      <div className="goal-progress"><i style={{width: move.progress + "%"}}/></div>
+                    </div>
+                    <button className="complete-btn" onClick={() => completeMove(move)}><CheckCircle2 size={20}/> Mark Complete</button>
+                  </article>
+                ))}
+                {!topMoves.length && <div className="clear-card"><CheckCircle2 size={34}/><b>You’re clear for today.</b><span>Add a next step or calendar item.</span></div>}
+              </div>
+            </section>
+
+            <section className="panel standards-panel">
+              <div className="section-heading">
+                <div className="heading-icon"><CheckCircle2 size={24}/></div>
+                <div><h2>Daily Standards</h2><span>The non-negotiables.</span></div>
+                <button className="text-btn">Edit Standards <ChevronRight size={16}/></button>
+              </div>
+              <div className="standards-row">
+                {standards.map(s => (
+                  <button key={s.id} className={"standard-circle " + (s.done ? "done" : "")} onClick={() => setStandards(old => old.map(x => x.id === s.id ? {...x, done: !x.done} : x))}>
+                    <span className="standard-icon"><StandardIcon type={s.icon}/></span>
+                    <b>{s.text}</b>
+                    <small>{s.done ? "1/1" : "0/1"}</small>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section className="panel goals-panel">
+              <div className="section-heading">
+                <div className="heading-icon"><Target size={24}/></div>
+                <div><h2>90-Day Goals</h2><span>Big vision. Focused execution.</span></div>
+                <button className="text-btn" onClick={newGoal}>View All Goals <ChevronRight size={16}/></button>
+              </div>
+              <div className="compact-goals">
+                {goals.slice(0,4).map(goal => (
+                  <article className="compact-goal" key={goal.id}>
+                    <div className="compact-goal-top">
+                      <span className={"mini-icon " + goal.category}><Target size={16}/></span>
+                      <small>{categories.find(c=>c.id===goal.category)?.label}</small>
+                      <button className="icon" onClick={() => setEditing({...goal})}><Pencil size={14}/></button>
+                    </div>
+                    <h3>{goal.title}</h3>
+                    <strong>{goal.progress}%</strong>
+                    <div className="goal-progress"><i style={{width: goal.progress+"%"}}/></div>
+                    <p><b>Next Step:</b> {goal.priorities.find(p=>!p.done)?.text || "Add next step"}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </main>
+
+          <aside className="dashboard-right">
+            <section className="quote-card">
+              <span className="quote-mark">“</span>
+              <h3>Discipline creates<br/>freedom.</h3>
+              <i></i>
+              <p>A MORE INTENTIONAL YOU.<br/>A BRIGHTER TOMORROW.</p>
+            </section>
+
+            <section className="streak-card">
+              <div className="streak-top"><Flame size={34}/><b>{streak}</b><span>Day Streak</span><ChevronRight size={18}/></div>
+              <div className="week-dots">
+                {["M","T","W","T","F","S","S"].map((d,i)=><div key={i}><span>{d}</span><i className={i<5?"hit":""}></i></div>)}
+              </div>
+            </section>
+
+            <section className="calendar-card">
+              <div className="calendar-head">
+                <h3>{month.toLocaleDateString("en-US",{month:"long",year:"numeric"})}</h3>
+                <div>
+                  <button onClick={() => setMonth(new Date(year, monthIndex-1,1))}>‹</button>
+                  <button onClick={() => setMonth(new Date(year, monthIndex+1,1))}>›</button>
+                </div>
+              </div>
+              <div className="weekday-row">{["SUN","MON","TUE","WED","THU","FRI","SAT"].map(d=><span key={d}>{d}</span>)}</div>
+              <div className="calendar-grid">
+                {monthCells.map((day,idx) => {
+                  if (!day) return <span key={idx} className="blank"></span>;
+                  const key = `${year}-${pad(monthIndex+1)}-${pad(day)}`;
+                  const hasEvent = events.some(e => e.date===key && !e.done);
+                  const isSelected = key===selectedDate;
+                  const isToday = key===dateKey(today);
+                  return <button key={idx} className={(isSelected?"selected ":"")+(isToday?"today ":"")} onClick={()=>setSelectedDate(key)}>
+                    {day}{hasEvent && <i></i>}
+                  </button>
+                })}
+              </div>
+              <button className="gold-btn full" onClick={addCalendarEvent}><Plus size={16}/> Add Event</button>
+
+              <div className="calendar-items">
+                <div className="calendar-items-head"><h4>{selectedDate===dateKey(today)?"Today’s Calendar Items":"Selected Day"}</h4></div>
+                {selectedEvents.length ? selectedEvents.map(e => (
+                  <div className="calendar-item" key={e.id}>
+                    <CalendarDays size={15}/><span>{e.time || "Anytime"}</span><b>{e.title}</b>
+                  </div>
+                )) : <p className="no-items">Nothing scheduled.</p>}
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <footer className="brand-footer">
+          <div><b>A MORE INTENTIONAL YOU.</b><b>A BRIGHTER TOMORROW.</b></div>
+          <span>PURPOSE&nbsp;&nbsp; | &nbsp;&nbsp;DISCIPLINE&nbsp;&nbsp; | &nbsp;&nbsp;GROWTH&nbsp;&nbsp; | &nbsp;&nbsp;FREEDOM&nbsp;&nbsp; | &nbsp;&nbsp;FAITH&nbsp;&nbsp; | &nbsp;&nbsp;LEGACY</span>
+        </footer>
+      </div>
+
+      {editing && <GoalModal goal={editing} onClose={() => setEditing(null)} onSave={saveGoal} onDelete={deleteGoal}/>}
     </div>
   );
 }
 
-function GoalModal({ goal, onClose, onSave }) {
+function GoalModal({ goal, onClose, onSave, onDelete }) {
   const [draft, setDraft] = useState(goal);
   const [newPriority, setNewPriority] = useState("");
-  const priorityRef = React.useRef(null);
-
-  useEffect(() => {
-    if (goal.addPriorityNow) setTimeout(() => priorityRef.current?.focus(), 100);
-  }, []);
 
   function addPriority() {
     const text = newPriority.trim();
@@ -205,23 +385,23 @@ function GoalModal({ goal, onClose, onSave }) {
     setNewPriority("");
   }
 
-  function removePriority(id) {
-    setDraft(d => ({...d, priorities: d.priorities.filter(p => p.id !== id)}));
-  }
-
-  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+  return <div className="modal-backdrop" onMouseDown={e => e.target===e.currentTarget && onClose()}>
     <div className="modal">
       <div className="modal-head"><div><p className="eyebrow">{draft.isNew ? "NEW 90-DAY GOAL" : "EDIT 90-DAY GOAL"}</p><h2>{draft.isNew ? "What are you committed to achieving?" : "Keep the goal clear and actionable."}</h2></div><button className="icon" onClick={onClose}><X/></button></div>
-      <label>Category<select value={draft.category} onChange={e => setDraft({...draft, category:e.target.value})}>{categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
-      <label>90-Day Goal<input autoFocus={!goal.addPriorityNow} value={draft.title} onChange={e => setDraft({...draft, title:e.target.value})} placeholder="Example: Close 3 profitable deals this quarter"/></label>
-      <label>Why this matters<textarea value={draft.why} onChange={e => setDraft({...draft, why:e.target.value})} placeholder="Connect the goal to the bigger reason behind it."/></label>
-      <label>Progress — {draft.progress}%<input className="range" type="range" min="0" max="100" step="5" value={draft.progress} onChange={e => setDraft({...draft, progress:Number(e.target.value)})}/></label>
+      <label>Category<select value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})}>{categories.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+      <label>90-Day Goal<input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
+      <label>Why this matters<textarea value={draft.why} onChange={e=>setDraft({...draft,why:e.target.value})}/></label>
+      <label>Progress — {draft.progress}%<input className="range" type="range" min="0" max="100" step="5" value={draft.progress} onChange={e=>setDraft({...draft,progress:Number(e.target.value)})}/></label>
       <div className="priority-editor">
-        <div className="priority-head"><b>Most Important Next Steps</b><span>{draft.priorities.length}</span></div>
-        {draft.priorities.map(p => <div className="edit-priority" key={p.id}><input value={p.text} onChange={e => setDraft(d => ({...d, priorities:d.priorities.map(x => x.id === p.id ? {...x,text:e.target.value} : x)}))}/><button className="icon danger" onClick={() => removePriority(p.id)}><Trash2 size={16}/></button></div>)}
-        <div className="new-priority"><input ref={priorityRef} value={newPriority} onChange={e => setNewPriority(e.target.value)} onKeyDown={e => e.key === "Enter" && addPriority()} placeholder="Add a 5-minute next step or key priority..."/><button onClick={addPriority}><Plus size={17}/> Add</button></div>
+        <div className="priority-head"><b>Next Steps</b><span>{draft.priorities.length}</span></div>
+        {draft.priorities.map(p=><div className="edit-priority" key={p.id}><input value={p.text} onChange={e=>setDraft(d=>({...d,priorities:d.priorities.map(x=>x.id===p.id?{...x,text:e.target.value}:x)}))}/><button className="icon danger" onClick={()=>setDraft(d=>({...d,priorities:d.priorities.filter(x=>x.id!==p.id)}))}><Trash2 size={16}/></button></div>)}
+        <div className="new-priority"><input value={newPriority} onChange={e=>setNewPriority(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addPriority()} placeholder="Add a next step..."/><button onClick={addPriority}><Plus size={17}/> Add</button></div>
       </div>
-      <div className="modal-actions"><button className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={!draft.title.trim()} onClick={() => onSave(draft)}><Save size={17}/> Save Goal</button></div>
+      <div className="modal-actions">
+        {!draft.isNew && <button className="danger-btn" onClick={()=>{onDelete(draft.id);onClose();}}>Delete</button>}
+        <button className="secondary" onClick={onClose}>Cancel</button>
+        <button className="primary" disabled={!draft.title.trim()} onClick={()=>onSave(draft)}><Save size={17}/> Save Goal</button>
+      </div>
     </div>
   </div>
 }
