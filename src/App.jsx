@@ -13,43 +13,14 @@ const categories = [
   { id: "personal", label: "Personal" },
 ];
 
-const starter = [
-  {
-    id: crypto.randomUUID(),
-    category: "business",
-    title: "Close Hampton 75-Home Community",
-    why: "Move the biggest development opportunity forward.",
-    progress: 40,
-    priorities: [
-      { id: crypto.randomUUID(), text: "Finalize site plan", done: false },
-      { id: crypto.randomUUID(), text: "Make 5 investor calls", done: false },
-    ],
-  },
-  {
-    id: crypto.randomUUID(),
-    category: "financial",
-    title: "Increase Net Worth by $500K",
-    why: "Create more financial freedom and optionality.",
-    progress: 35,
-    priorities: [{ id: crypto.randomUUID(), text: "Review refi opportunities", done: false }],
-  },
-  {
-    id: crypto.randomUUID(),
-    category: "health",
-    title: "Get to 180 lbs",
-    why: "Be in the best shape of my life.",
-    progress: 60,
-    priorities: [{ id: crypto.randomUUID(), text: "Workout (Lift + Sauna)", done: false }],
-  },
-  {
-    id: crypto.randomUUID(),
-    category: "personal",
-    title: "Be the Best Husband and Father",
-    why: "Make family the reason the work matters.",
-    progress: 50,
-    priorities: [{ id: crypto.randomUUID(), text: "Read 10 pages", done: false }],
-  },
-];
+const starter = [];
+
+const demoGoalTitles = new Set([
+  "Close Hampton 75-Home Community",
+  "Increase Net Worth by $500K",
+  "Get to 180 lbs",
+  "Be the Best Husband and Father",
+]);
 
 const standardDefaults = [
   { id: "steps", text: "10K Steps", icon: "steps", done: false },
@@ -65,9 +36,18 @@ const standardDefaults = [
 function loadGoals() {
   try {
     const raw = localStorage.getItem("driven-intention-goals");
-    return raw ? JSON.parse(raw) : starter;
+    const parsed = raw ? JSON.parse(raw) : starter;
+    if (!Array.isArray(parsed)) return [];
+    const migrated = localStorage.getItem("driven-intention-demo-goals-cleared");
+    if (!migrated) {
+      const cleaned = parsed.filter(g => !demoGoalTitles.has(g?.title));
+      localStorage.setItem("driven-intention-demo-goals-cleared", "1");
+      localStorage.setItem("driven-intention-goals", JSON.stringify(cleaned));
+      return cleaned;
+    }
+    return parsed;
   } catch {
-    return starter;
+    return [];
   }
 }
 
@@ -450,7 +430,7 @@ function GoalModal({ goal, onClose, onSave, onDelete }) {
   return <div className="modal-backdrop" onMouseDown={e => e.target===e.currentTarget && onClose()}>
     <div className="modal">
       <div className="modal-head"><div><p className="eyebrow">{draft.isNew ? "NEW 90-DAY GOAL" : "EDIT 90-DAY GOAL"}</p><h2>{draft.isNew ? "What are you committed to achieving?" : "Keep the goal clear and actionable."}</h2></div><button className="icon" onClick={onClose}><X/></button></div>
-      <label>Category<select value={draft.category} onChange={e=>setDraft({...draft,category:e.target.value})}>{categories.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
+      <label>Category<select value={draft.category} onChange={e=>setDraft(d => d.isNew ? {...d,category:e.target.value,title:"",why:"",progress:0,priorities:[]} : {...d,category:e.target.value})}>{categories.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}</select></label>
       <label>90-Day Goal<input value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>
       <label>Why this matters<textarea value={draft.why} onChange={e=>setDraft({...draft,why:e.target.value})}/></label>
       <label>Progress — {draft.progress}%<input className="range" type="range" min="0" max="100" step="5" value={draft.progress} onChange={e=>setDraft({...draft,progress:Number(e.target.value)})}/></label>
