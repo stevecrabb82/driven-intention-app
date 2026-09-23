@@ -85,6 +85,7 @@ export default function App() {
   const [month, setMonth] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
   const [selectedDate, setSelectedDate] = useState(dateKey(today));
   const [activePage, setActivePage] = useState("home");
+  const [stepEditor, setStepEditor] = useState(null);
 
   useEffect(() => localStorage.setItem("driven-intention-goals", JSON.stringify(goals)), [goals]);
   useEffect(() => localStorage.setItem("driven-intention-standards", JSON.stringify(standards)), [standards]);
@@ -107,7 +108,8 @@ export default function App() {
       const g = goals.find(x => x.id === e.goalId);
       return {
         id: e.id, text: e.title, type: "event", category: g?.category || "personal",
-        goalTitle: g?.title || "Calendar", progress: g?.progress || 0, time: e.time || ""
+        goalTitle: g?.title || "Calendar", progress: g?.progress || 0, time: e.time || "",
+        sourcePriorityId: e.sourcePriorityId || "", goalId: e.goalId || "", duration: e.duration || 30
       };
     });
     return [...scheduled, ...incompleteGoalMoves].slice(0, 3);
@@ -120,6 +122,118 @@ export default function App() {
       id: crypto.randomUUID(), category: "business", title: "", why: "",
       progress: 0, priorities: [], isNew: true,
     });
+  }
+
+  function newStep(goalId = "", date = dateKey(today)) {
+    setStepEditor({
+      id: crypto.randomUUID(),
+      text: "",
+      goalId: goalId || goals[0]?.id || "",
+      date,
+      time: "",
+      duration: 30,
+      reminder: "15",
+      repeat: "none",
+      priority: "normal",
+      isNew: true,
+    });
+  }
+
+  function editStep(move) {
+    setStepEditor({
+      id: move.id,
+      text: move.text,
+      goalId: move.goalId,
+      date: move.date || "",
+      time: move.time || "",
+      duration: move.duration || 30,
+      reminder: move.reminder || "15",
+      repeat: move.repeat || "none",
+      priority: move.priority || "normal",
+      isNew: false,
+    });
+  }
+
+  function requestNotifications() {
+    if (!("Notification" in window)) return;
+    if (Notification.permission === "default") Notification.requestPermission();
+  }
+
+  function scheduleLocalReminder(step) {
+    if (!step.date || !step.time || step.reminder === "none" || !("Notification" in window)) return;
+    if (Notification.permission !== "granted") return;
+    const start = new Date(step.date + "T" + step.time);
+    const mins = Number(step.reminder) || 0;
+    const delay = start.getTime() - Date.now() - mins * 60000;
+    if (delay > 0 && delay < 2147483647) {
+      setTimeout(() => {
+        const goal = goals.find(g => g.id === step.goalId);
+        new Notification("Driven Intention", {
+          body: step.text + (goal ? " • " + goal.title : ""),
+        });
+      }, delay);
+    }
+  }
+
+  function saveStep(step) {
+    const goal = goals.find(g => g.id === step.goalId);
+    if (!goal || !step.text.trim()) return;
+
+    if (step.isNew) {
+      const priority = {
+        id: step.id, text: step.text.trim(), done: false,
+        date: step.date || "", time: step.time || "", duration: Number(step.duration) || 30,
+        reminder: step.reminder, repeat: step.repeat, priority: step.priority
+      };
+      setGoals(old => old.map(g => g.id === step.goalId ? {...g, priorities:[...g.priorities, priority]} : g));
+    } else {
+      setGoals(old => old.map(g => g.id === step.goalId ? {
+        ...g,
+        priorities: g.priorities.map(p => p.id === step.id ? {
+          ...p, text:step.text.trim(), date:step.date || "", time:step.time || "",
+          duration:Number(step.duration)||30, reminder:step.reminder, repeat:step.repeat, priority:step.priority
+        } : p)
+      } : g));
+    }
+
+    setEvents(old => {
+      const without = old.filter(e => e.sourcePriorityId !== step.id);
+      if (!step.date) return without;
+      const base = {
+        id: crypto.randomUUID(), sourcePriorityId: step.id, title: step.text.trim(),
+        date: step.date, time: step.time || "", duration: Number(step.duration) || 30,
+        goalId: step.goalId, reminder: step.reminder, repeat: step.repeat, done:false
+      };
+      const generated = [base];
+      if (step.repeat === "weekly") {
+        for (let i=1;i<=12;i++) {
+          const d = new Date(step.date + "T12:00:00");
+          d.setDate(d.getDate() + i*7);
+          generated.push({...base,id:crypto.randomUUID(),date:dateKey(d)});
+        }
+      } else if (step.repeat === "daily") {
+        for (let i=1;i<=30;i++) {
+          const d = new Date(step.date + "T12:00:00");
+          d.setDate(d.getDate() + i);
+          generated.push({...base,id:crypto.randomUUID(),date:dateKey(d)});
+        }
+      } else if (step.repeat === "weekdays") {
+        let d = new Date(step.date + "T12:00:00");
+        let count = 0;
+        while (count < 30) {
+          d.setDate(d.getDate()+1);
+          if (d.getDay() !== 0 && d.getDay() !== 6) {
+            generated.push({...base,id:crypto.randomUUID(),date:dateKey(d)});
+            count++;
+          }
+        }
+      }
+      return [...without, ...generated];
+    });
+
+    if (step.reminder !== "none") requestNotifications();
+    scheduleLocalReminder(step);
+    setStepEditor(null);
   }
 
   function saveGoal(goal) {
@@ -143,8 +257,10 @@ export default function App() {
   function completeMove(move) {
     if (move.type === "event") {
       setEvents(old => old.map(e => e.id === move.id ? { ...e, done: true } : e));
+      if (move.sourcePriorityId && move.goalId) togglePriority(move.goalId, move.sourcePriorityId);
     } else {
       togglePriority(move.goalId, move.id);
+      setEvents(old => old.map(e => e.sourcePriorityId === move.id ? {...e, done:true} : e));
     }
   }
 
@@ -225,7 +341,7 @@ export default function App() {
                   <h2>Your Top 3 Moves</h2>
                   <span>Small steps. Big results.</span>
                 </div>
-                <button className="gold-btn" onClick={() => goals[0] && setEditing({...goals[0], addPriorityNow:true})}><Plus size={18}/> Add Next Step</button>
+                <button className="gold-btn" onClick={() => newStep()}><Plus size={18}/> Add Next Step</button>
               </div>
 
               <div className="top-moves-grid">
@@ -359,18 +475,18 @@ export default function App() {
           </section>
         ) : activePage === "steps" ? (
           <section className="page-shell">
-            <div className="page-title"><div><p>ACTION</p><h2>Next Steps</h2><span>Every action stays connected to the goal it moves forward.</span></div></div>
+            <div className="page-title"><div><p>ACTION</p><h2>Next Steps</h2><span>Every action stays connected to the goal it moves forward.</span></div><button className="gold-btn" onClick={()=>newStep()}><Plus size={18}/> Add Next Step</button></div>
             <div className="steps-page-grid">
               {incompleteGoalMoves.map(move => <article className="step-page-card" key={move.id}>
                 <span className={"mini-icon "+move.category}><ListTodo size={17}/></span>
-                <div><small>{categories.find(c=>c.id===move.category)?.label}</small><h3>{move.text}</h3><p><Target size={13}/> {move.goalTitle}</p></div>
-                <button className="complete-round" onClick={()=>completeMove(move)}><CheckCircle2 size={22}/></button>
+                <div><small>{categories.find(c=>c.id===move.category)?.label}</small><h3>{move.text}</h3><p><Target size={13}/> {move.goalTitle}</p>{(move.date||move.time) && <p className="step-time"><Clock size={13}/> {move.date || "Unscheduled"} {move.time ? " • "+move.time : ""}</p>}</div>
+                <div className="step-actions"><button className="timeblock-btn" onClick={()=>editStep(move)}><CalendarDays size={17}/> {move.date ? "Edit Block" : "Time Block"}</button><button className="complete-round" onClick={()=>completeMove(move)}><CheckCircle2 size={22}/></button></div>
               </article>)}
             </div>
           </section>
         ) : activePage === "calendar" ? (
           <section className="page-shell">
-            <div className="page-title"><div><p>PLAN WITH PURPOSE</p><h2>Calendar</h2><span>Schedule the actions that move your goals forward.</span></div><button className="gold-btn" onClick={addCalendarEvent}><Plus size={18}/> Add Event</button></div>
+            <div className="page-title"><div><p>PLAN WITH PURPOSE</p><h2>Calendar</h2><span>Schedule the actions that move your goals forward.</span></div><button className="gold-btn" onClick={()=>newStep("",selectedDate)}><Plus size={18}/> Add Goal Block</button></div>
             <div className="calendar-page-layout">
               <section className="calendar-card large-calendar">
                 <div className="calendar-head"><h3>{month.toLocaleDateString("en-US",{month:"long",year:"numeric"})}</h3><div><button onClick={()=>setMonth(new Date(year,monthIndex-1,1))}>‹</button><button onClick={()=>setMonth(new Date(year,monthIndex+1,1))}>›</button></div></div>
@@ -412,6 +528,7 @@ export default function App() {
       </div>
 
       {editing && <GoalModal goal={editing} onClose={() => setEditing(null)} onSave={saveGoal} onDelete={deleteGoal}/>}
+      {stepEditor && <StepModal step={stepEditor} goals={goals} onClose={()=>setStepEditor(null)} onSave={saveStep}/>}
     </div>
   );
 }
@@ -444,6 +561,34 @@ function GoalModal({ goal, onClose, onSave, onDelete }) {
         <button className="secondary" onClick={onClose}>Cancel</button>
         <button className="primary" disabled={!draft.title.trim()} onClick={()=>onSave(draft)}><Save size={17}/> Save Goal</button>
       </div>
+    </div>
+  </div>
+}
+
+function StepModal({ step, goals, onClose, onSave }) {
+  const [draft, setDraft] = useState(step);
+  const timed = Boolean(draft.date || draft.time);
+  return <div className="modal-backdrop" onMouseDown={e=>e.target===e.currentTarget&&onClose()}>
+    <div className="modal step-modal">
+      <div className="modal-head"><div><p className="eyebrow">NEXT STEP</p><h2>{draft.isNew ? "What moves the goal forward?" : "Edit Next Step"}</h2></div><button className="icon" onClick={onClose}><X/></button></div>
+      <label>Next Step<input autoFocus value={draft.text} onChange={e=>setDraft({...draft,text:e.target.value})} placeholder="Example: Call 5 investors"/></label>
+      <label>Moves Toward<select value={draft.goalId} onChange={e=>setDraft({...draft,goalId:e.target.value})}><option value="">Choose a 90-day goal</option>{goals.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}</select></label>
+      <div className="quick-date-row">
+        <button onClick={()=>setDraft({...draft,date:dateKey(today)})}>Today</button>
+        <button onClick={()=>{const d=new Date();d.setDate(d.getDate()+1);setDraft({...draft,date:dateKey(d)})}}>Tomorrow</button>
+        <button onClick={()=>setDraft({...draft,date:"",time:""})}>Someday</button>
+      </div>
+      <div className="schedule-grid">
+        <label>Date<input type="date" value={draft.date} onChange={e=>setDraft({...draft,date:e.target.value})}/></label>
+        <label>Start Time<input type="time" value={draft.time} onChange={e=>setDraft({...draft,time:e.target.value})}/></label>
+        <label>Duration<select value={draft.duration} onChange={e=>setDraft({...draft,duration:Number(e.target.value)})}><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hour</option><option value="90">90 min</option><option value="120">2 hours</option></select></label>
+        <label>Reminder<select value={draft.reminder} onChange={e=>setDraft({...draft,reminder:e.target.value})}><option value="none">None</option><option value="0">At start</option><option value="15">15 min before</option><option value="30">30 min before</option><option value="60">1 hour before</option></select></label>
+        <label>Repeat<select value={draft.repeat} onChange={e=>setDraft({...draft,repeat:e.target.value})}><option value="none">Does not repeat</option><option value="daily">Daily</option><option value="weekdays">Weekdays</option><option value="weekly">Weekly</option></select></label>
+        <label>Priority<select value={draft.priority} onChange={e=>setDraft({...draft,priority:e.target.value})}><option value="normal">Normal</option><option value="top3">Top 3</option></select></label>
+      </div>
+      {timed && <div className="timeblock-note"><CalendarDays size={17}/><span>This step will appear on your calendar and on Today when its date arrives.</span></div>}
+      <div className="notification-note"><Bell size={17}/><span>Browser reminders work while this web app is open. Reliable background phone push is the next notification layer we’ll add.</span></div>
+      <div className="modal-actions"><button className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={!draft.text.trim()||!draft.goalId} onClick={()=>onSave(draft)}><Save size={17}/> Save Next Step</button></div>
     </div>
   </div>
 }
