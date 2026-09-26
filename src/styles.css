@@ -11,3 +11,19 @@
 /* Next-step scheduling + time blocking */
 .step-actions{display:flex;align-items:center;gap:8px}.timeblock-btn{border:1px solid #d8cbb8;background:#f7f1e7;color:#795a34;border-radius:9px;padding:8px 10px;display:flex;align-items:center;gap:6px;font-size:10px;font-weight:750;cursor:pointer}.timeblock-btn:hover{background:#0a3932;color:#fff;border-color:#0a3932}.step-time{margin-top:5px!important;color:#9a6c34!important}.step-modal{width:min(700px,100%)}.quick-date-row{display:flex;gap:7px;margin:10px 0 3px}.quick-date-row button{border:1px solid #d9cebd;background:#f7f1e7;color:#6d5536;border-radius:18px;padding:7px 12px;font-size:10px;font-weight:750;cursor:pointer}.quick-date-row button:hover{background:#0a3932;color:#fff}.schedule-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.timeblock-note,.notification-note{display:flex;align-items:flex-start;gap:9px;border-radius:10px;padding:10px 12px;margin-top:10px;font-size:10px;line-height:1.45}.timeblock-note{background:#edf3ef;color:#31564d;border:1px solid #d4e2da}.timeblock-note svg{color:#9a6c34;flex:none}.notification-note{background:#f6efe4;color:#6f5b3f;border:1px solid #e5d6bf}.notification-note svg{color:#a8793d;flex:none}
 @media(max-width:600px){.step-page-card{grid-template-columns:auto 1fr}.step-actions{grid-column:1/-1;justify-content:flex-end}.schedule-grid{grid-template-columns:1fr}.quick-date-row{overflow:auto}}
+
+
+/* Daily Standards editor */
+.standards-modal{width:min(680px,100%)}
+.standards-help{font-size:11px;color:#6f756f;margin:-5px 0 14px}
+.standards-editor-list{display:grid;gap:8px}
+.standard-edit-row{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;background:#fff;border:1px solid #e3dacf;border-radius:11px;padding:9px 10px}
+.standard-edit-row>div{display:grid;gap:3px}
+.standard-edit-row small{font-size:7px;letter-spacing:1.4px;color:#9b6c35;font-weight:800}
+.standard-edit-row input{margin:0!important;width:100%}
+.standard-edit-icon{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:#f6f0e6;color:#9b6a31;border:1px solid #e3d6c4}
+.add-standard-btn,.reset-btn{border:1px solid #d8cbb8;background:#f7f1e7;color:#795a34;border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:6px;font-size:10px;font-weight:750;cursor:pointer}
+.add-standard-btn{margin-top:10px}
+.add-standard-btn:hover,.reset-btn:hover{background:#0a3932;color:#fff;border-color:#0a3932}
+.reset-btn{margin-right:auto}
+@media(max-width:600px){.standard-edit-row{grid-template-columns:auto 1fr auto}.standards-modal{padding:16px}}
