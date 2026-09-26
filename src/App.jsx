@@ -503,11 +503,11 @@ export default function App() {
                         <StandardIcon type={s.icon} size={28}/>
                         <Pencil size={13} className="icon-edit-mark"/>
                       </button>
-                      <div className="daily-action-copy">
+                      <button className="daily-action-copy daily-action-edit-zone" onClick={() => setStandardsEditor(s.id)} title="Edit this standard">
                         <small>STANDARD · {standardScheduleLabel(s)}</small>
                         <h3>{s.text}</h3>
                         <p>{linkedGoal ? <>Moves toward: <b>{linkedGoal.title}</b></> : "Recurring commitment"}</p>
-                      </div>
+                      </button>
                       <button className="daily-complete-btn" onClick={() => toggleStandardCompletion(s.id)}>
                         <CheckCircle2 size={21}/>{done ? "Complete" : "Mark Complete"}
                       </button>
@@ -520,11 +520,11 @@ export default function App() {
                       {move.type === "event" ? <CalendarDays size={28}/> : move.category === "health" ? <Dumbbell size={28}/> : move.category === "personal" ? <BookOpen size={28}/> : <BriefcaseBusiness size={28}/>}
                       <Pencil size={13} className="icon-edit-mark"/>
                     </button>
-                    <div className="daily-action-copy">
+                    <button className="daily-action-copy daily-action-edit-zone" onClick={() => editMove(move)} title="Edit this next step">
                       <small>NEXT STEP · {categories.find(c => c.id === move.category)?.label || "Personal"}</small>
                       <h3>{move.text}</h3>
                       <p>Moves toward: <b>{move.goalTitle}</b>{move.time ? <> · {move.time}</> : null}</p>
-                    </div>
+                    </button>
                     <button className="daily-complete-btn" onClick={() => completeMove(move)}>
                       <CheckCircle2 size={21}/>{move.done ? "Complete" : "Mark Complete"}
                     </button>
