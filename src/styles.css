@@ -335,3 +335,39 @@
   .daily-action-card{grid-template-columns:54px minmax(0,1fr);padding:14px;}
   .daily-action-icon{width:50px;height:50px;}
 }
+
+
+/* Larger edit tap targets for touch devices */
+.daily-action-icon{
+  min-width:64px;
+  min-height:64px;
+}
+.icon-edit-mark{
+  width:17px;
+  height:17px;
+  right:-5px;
+  bottom:-5px;
+  padding:4px;
+}
+@media (max-width: 680px){
+  .daily-action-card{
+    grid-template-columns:68px minmax(0,1fr);
+  }
+  .daily-action-icon{
+    width:62px;
+    height:62px;
+    min-width:62px;
+    min-height:62px;
+  }
+  .daily-action-icon svg:not(.icon-edit-mark){
+    width:30px;
+    height:30px;
+  }
+  .icon-edit-mark{
+    width:18px;
+    height:18px;
+    right:-4px;
+    bottom:-4px;
+    padding:5px;
+  }
+}
