@@ -813,3 +813,55 @@
     display:none;
   }
 }
+
+
+/* Larger completion controls for faster mobile tapping */
+.focus-check-btn,
+.todo-check,
+.most-important-complete,
+.complete-round,
+.daily-complete-btn{
+  min-width:52px;
+  min-height:52px;
+}
+
+.focus-check-btn{
+  width:52px;
+  height:52px;
+}
+
+.focus-check-btn svg,
+.todo-check svg,
+.most-important-complete svg,
+.complete-round svg,
+.daily-complete-btn svg{
+  width:32px;
+  height:32px;
+  stroke-width:2.4;
+}
+
+.todo-check{
+  width:52px;
+}
+
+.most-important-complete{
+  padding:11px 16px;
+}
+
+@media (max-width:680px){
+  .focus-check-btn{
+    width:56px;
+    height:56px;
+  }
+  .focus-check-btn svg,
+  .todo-check svg,
+  .most-important-complete svg,
+  .complete-round svg,
+  .daily-complete-btn svg{
+    width:34px;
+    height:34px;
+  }
+  .quick-todo-row{
+    grid-template-columns:58px minmax(0,1fr) 44px;
+  }
+}
