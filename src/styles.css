@@ -189,3 +189,149 @@
     gap:8px;
   }
 }
+
+
+/* Unified daily standards + next steps */
+.daily-actions-panel{overflow:visible;}
+.daily-actions-heading{align-items:center;}
+.daily-actions-buttons{margin-left:auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.daily-action-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-top:18px;
+}
+.daily-action-card{
+  position:relative;
+  display:grid;
+  grid-template-columns:64px minmax(0,1fr);
+  gap:14px;
+  align-items:start;
+  min-height:150px;
+  padding:16px;
+  border-radius:16px;
+  border:1px solid #d7dfdc;
+  transition:.18s ease;
+}
+.daily-action-card.is-incomplete{
+  background:#fff4f2;
+  border-color:#e7b6ae;
+}
+.daily-action-card.is-complete{
+  background:#edf7f0;
+  border-color:#b7d8c1;
+}
+.daily-action-icon{
+  position:relative;
+  width:58px;
+  height:58px;
+  border:0;
+  border-radius:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:.18s ease;
+}
+.is-incomplete .daily-action-icon{
+  background:#d96459;
+  color:#fff;
+  box-shadow:0 5px 14px rgba(165,64,52,.18);
+}
+.is-complete .daily-action-icon{
+  background:#3f8a62;
+  color:#fff;
+  box-shadow:0 5px 14px rgba(54,110,76,.18);
+}
+.daily-action-icon:hover{transform:translateY(-1px);}
+.icon-edit-mark{
+  position:absolute;
+  right:-3px;
+  bottom:-3px;
+  background:#fff;
+  color:#35564d;
+  border-radius:999px;
+  padding:2px;
+  box-sizing:content-box;
+  border:1px solid #d5dfdb;
+}
+.daily-action-copy{
+  min-width:0;
+  padding-right:4px;
+}
+.daily-action-copy small{
+  display:block;
+  margin:1px 0 5px;
+  color:#806d66;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.08em;
+}
+.daily-action-copy h3{
+  margin:0;
+  color:#173a34;
+  font-size:17px;
+  line-height:1.28;
+  white-space:normal;
+  overflow:visible;
+  text-overflow:clip;
+  word-break:break-word;
+}
+.daily-action-copy p{
+  margin:8px 0 40px;
+  color:#64716d;
+  font-size:12px;
+  line-height:1.4;
+  white-space:normal;
+  overflow:visible;
+}
+.daily-action-copy p b{color:#345a50;}
+.daily-complete-btn{
+  position:absolute;
+  right:14px;
+  bottom:13px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border:0;
+  border-radius:999px;
+  padding:8px 12px;
+  cursor:pointer;
+  font-size:11px;
+  font-weight:800;
+}
+.is-incomplete .daily-complete-btn{
+  background:#f1d0cb;
+  color:#8d3d34;
+}
+.is-complete .daily-complete-btn{
+  background:#d4e9db;
+  color:#2f6f4d;
+}
+
+.calendar-linked-item{
+  width:100%;
+  text-align:left;
+  border:0;
+  cursor:pointer;
+}
+.calendar-linked-item.done,
+.agenda-linked.done{
+  background:#edf7f0;
+}
+.agenda-linked{
+  width:100%;
+  border:0;
+  text-align:left;
+  cursor:pointer;
+}
+
+@media (max-width: 980px){
+  .daily-action-grid{grid-template-columns:1fr;}
+}
+@media (max-width: 680px){
+  .daily-actions-heading{align-items:flex-start;}
+  .daily-actions-buttons{margin-left:0;width:100%;}
+  .daily-action-card{grid-template-columns:54px minmax(0,1fr);padding:14px;}
+  .daily-action-icon{width:50px;height:50px;}
+}
