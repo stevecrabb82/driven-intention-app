@@ -86,6 +86,7 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(dateKey(today));
   const [activePage, setActivePage] = useState("home");
   const [stepEditor, setStepEditor] = useState(null);
+  const [standardsEditor, setStandardsEditor] = useState(false);
 
   useEffect(() => localStorage.setItem("driven-intention-goals", JSON.stringify(goals)), [goals]);
   useEffect(() => localStorage.setItem("driven-intention-standards", JSON.stringify(standards)), [standards]);
@@ -116,6 +117,20 @@ export default function App() {
   }, [todayEvents, goals, incompleteGoalMoves]);
 
   const streak = 7;
+
+  function saveStandards(nextStandards) {
+    const cleaned = nextStandards
+      .map(s => ({...s, text: s.text.trim()}))
+      .filter(s => s.text);
+    if (!cleaned.length) return;
+    setStandards(cleaned);
+    setStandardsEditor(false);
+  }
+
+  function resetStandards() {
+    setStandards(standardDefaults.map(s => ({...s, done: false})));
+    setStandardsEditor(false);
+  }
 
   function newGoal() {
     setEditing({
@@ -374,7 +389,7 @@ export default function App() {
               <div className="section-heading">
                 <div className="heading-icon"><CheckCircle2 size={24}/></div>
                 <div><h2>Daily Standards</h2><span>The non-negotiables.</span></div>
-                <button className="text-btn">Edit Standards <ChevronRight size={16}/></button>
+                <button className="text-btn" onClick={() => setStandardsEditor(true)}>Edit Standards <ChevronRight size={16}/></button>
               </div>
               <div className="standards-row">
                 {standards.map(s => (
@@ -498,7 +513,7 @@ export default function App() {
           </section>
         ) : activePage === "standards" ? (
           <section className="page-shell">
-            <div className="page-title"><div><p>THE NON-NEGOTIABLES</p><h2>Daily Standards</h2><span>Keep the habits that define who you are becoming.</span></div></div>
+            <div className="page-title"><div><p>THE NON-NEGOTIABLES</p><h2>Daily Standards</h2><span>Keep the habits that define who you are becoming.</span></div><button className="gold-btn" onClick={() => setStandardsEditor(true)}><Pencil size={17}/> Edit Standards</button></div>
             <div className="standards-page-grid">{standards.map(s=><button key={s.id} className={"standard-page-card "+(s.done?"done":"")} onClick={()=>setStandards(old=>old.map(x=>x.id===s.id?{...x,done:!x.done}:x))}><span className="standard-icon"><StandardIcon type={s.icon} size={30}/></span><h3>{s.text}</h3><p>{s.done?"Complete today":"Tap when complete"}</p><CheckCircle2 size={24}/></button>)}</div>
           </section>
         ) : activePage === "progress" ? (
@@ -589,6 +604,60 @@ function StepModal({ step, goals, onClose, onSave }) {
       {timed && <div className="timeblock-note"><CalendarDays size={17}/><span>This step will appear on your calendar and on Today when its date arrives.</span></div>}
       <div className="notification-note"><Bell size={17}/><span>Browser reminders work while this web app is open. Reliable background phone push is the next notification layer we’ll add.</span></div>
       <div className="modal-actions"><button className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={!draft.text.trim()||!draft.goalId} onClick={()=>onSave(draft)}><Save size={17}/> Save Next Step</button></div>
+    </div>
+  </div>
+}
+
+function StandardsModal({ standards, onClose, onSave, onReset }) {
+  const [draft, setDraft] = useState(standards.map(s => ({...s})));
+
+  function updateText(id, text) {
+    setDraft(items => items.map(s => s.id === id ? {...s, text} : s));
+  }
+
+  function removeStandard(id) {
+    setDraft(items => items.filter(s => s.id !== id));
+  }
+
+  function addStandard() {
+    setDraft(items => [...items, {
+      id: crypto.randomUUID(),
+      text: "New Standard",
+      icon: "check",
+      done: false,
+    }]);
+  }
+
+  return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal standards-modal">
+      <div className="modal-head">
+        <div><p className="eyebrow">DAILY STANDARDS</p><h2>Edit your non-negotiables.</h2></div>
+        <button className="icon" onClick={onClose}><X/></button>
+      </div>
+      <p className="standards-help">Rename, add, or remove standards. Your changes save to this app automatically.</p>
+      <div className="standards-editor-list">
+        {draft.map((s, index) => (
+          <div className="standard-edit-row" key={s.id}>
+            <span className="standard-edit-icon"><StandardIcon type={s.icon}/></span>
+            <div>
+              <small>STANDARD {index + 1}</small>
+              <input
+                value={s.text}
+                onChange={e => updateText(s.id, e.target.value)}
+                onKeyDown={e => e.key === "Enter" && e.currentTarget.blur()}
+                placeholder="Name this standard"
+              />
+            </div>
+            <button className="icon danger" aria-label={"Delete " + s.text} onClick={() => removeStandard(s.id)}><Trash2 size={17}/></button>
+          </div>
+        ))}
+      </div>
+      <button className="add-standard-btn" onClick={addStandard}><Plus size={17}/> Add Standard</button>
+      <div className="modal-actions">
+        <button className="reset-btn" onClick={onReset}><RotateCcw size={16}/> Reset Defaults</button>
+        <button className="secondary" onClick={onClose}>Cancel</button>
+        <button className="primary" disabled={!draft.some(s => s.text.trim())} onClick={() => onSave(draft)}><Save size={17}/> Save Standards</button>
+      </div>
     </div>
   </div>
 }
