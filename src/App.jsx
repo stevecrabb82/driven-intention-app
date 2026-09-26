@@ -544,6 +544,7 @@ export default function App() {
 
       {editing && <GoalModal goal={editing} onClose={() => setEditing(null)} onSave={saveGoal} onDelete={deleteGoal}/>}
       {stepEditor && <StepModal step={stepEditor} goals={goals} onClose={()=>setStepEditor(null)} onSave={saveStep}/>}
+      {standardsEditor && <StandardsModal standards={standards} onClose={()=>setStandardsEditor(false)} onSave={saveStandards} onReset={resetStandards}/>}
     </div>
   );
 }
