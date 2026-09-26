@@ -188,6 +188,11 @@ export default function App() {
     [topMoves]
   );
 
+  const allNextSteps = useMemo(
+    () => [...incompleteGoalMoves].sort((a,b) => (b.priority === "top3") - (a.priority === "top3")),
+    [incompleteGoalMoves]
+  );
+
   const todaysQuickTodos = useMemo(
     () => quickTodos.filter(t => t.date === dateKey(today)),
     [quickTodos]
@@ -606,29 +611,34 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="daily-subsection important-subsection">
+              <div className="daily-subsection next-steps-subsection">
                 <div className="daily-subsection-head">
-                  <div><small>FOCUS FIRST</small><h3>Most Important Next Step</h3></div>
-                  <button className="gold-btn small-gold-btn" onClick={() => newStep()}><Plus size={17}/> Add / Change</button>
+                  <div><small>FOCUS FIRST</small><h3>All Next Steps</h3><span>Your most important step stays at the top, with every other open next step visible below it.</span></div>
+                  <button className="gold-btn small-gold-btn" onClick={() => newStep()}><Plus size={17}/> Add Next Step</button>
                 </div>
-                {mostImportantMove ? (
-                  <article className={"most-important-card " + (mostImportantMove.done ? "is-complete" : "is-incomplete")}>
-                    <button className="focus-status-icon" onClick={() => editMove(mostImportantMove)}>
-                      {mostImportantMove.type === "event" ? <CalendarDays size={29}/> : mostImportantMove.category === "health" ? <Dumbbell size={29}/> : mostImportantMove.category === "personal" ? <BookOpen size={29}/> : <Target size={29}/>}
-                      <Pencil size={12} className="icon-edit-mark"/>
-                    </button>
-                    <button className="most-important-copy" onClick={() => editMove(mostImportantMove)}>
-                      <small>{categories.find(c => c.id === mostImportantMove.category)?.label || "Personal"} · {mostImportantMove.time || "Today"}</small>
-                      <h3>{mostImportantMove.text}</h3>
-                      <p>Moves toward: <b>{mostImportantMove.goalTitle}</b></p>
-                    </button>
-                    <button className="most-important-complete" onClick={() => completeMove(mostImportantMove)}>
-                      <CheckCircle2 size={21}/>{mostImportantMove.done ? "Complete" : "Mark Complete"}
-                    </button>
-                  </article>
-                ) : (
-                  <div className="empty-important"><Target size={25}/><div><b>No most important step selected.</b><span>Add the one move that would make today count.</span></div><button onClick={() => newStep()}>Add it</button></div>
-                )}
+                <div className="all-next-steps-list">
+                  {allNextSteps.map((move, index) => {
+                    const isMostImportant = move.priority === "top3" || (!allNextSteps.some(x=>x.priority==="top3") && index===0);
+                    return (
+                      <article className={"all-next-step-row "+(isMostImportant?"most-important-row":"")} key={move.id}>
+                        <button className="next-step-check" onClick={()=>completeMove(move)} aria-label={"Complete "+move.text}>
+                          <CheckCircle2 size={30}/>
+                        </button>
+                        <button className="next-step-copy" onClick={()=>editStep(move)}>
+                          <div className="next-step-labels">
+                            {isMostImportant && <span className="important-badge">MOST IMPORTANT</span>}
+                            <span>{categories.find(c=>c.id===move.category)?.label || "Personal"}</span>
+                            {move.date && <span>{move.date}{move.time ? " · "+move.time : ""}</span>}
+                          </div>
+                          <h4>{move.text}</h4>
+                          <p><Target size={12}/> {move.goalTitle}</p>
+                        </button>
+                        <button className="next-step-edit" onClick={()=>editStep(move)} aria-label={"Edit "+move.text}><Pencil size={18}/></button>
+                      </article>
+                    );
+                  })}
+                  {!allNextSteps.length && <div className="empty-important"><Target size={25}/><div><b>No open next steps.</b><span>Add the next move for one of your 90-day goals.</span></div><button onClick={() => newStep()}>Add one</button></div>}
+                </div>
               </div>
 
               <div className="daily-subsection todo-subsection">
