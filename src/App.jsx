@@ -23,14 +23,14 @@ const demoGoalTitles = new Set([
 ]);
 
 const standardDefaults = [
-  { id: "steps", text: "10K Steps", icon: "steps", done: false },
-  { id: "lift", text: "Lift / Sauna", icon: "lift", done: false },
-  { id: "nutrition", text: "Clean Nutrition", icon: "nutrition", done: false },
-  { id: "hydrate", text: "Hydrate", icon: "hydrate", done: false },
-  { id: "mindset", text: "Mindset / Prayer", icon: "mindset", done: false },
-  { id: "read", text: "Read", icon: "read", done: false },
-  { id: "am", text: "AM Review", icon: "am", done: false },
-  { id: "pm", text: "PM Review", icon: "pm", done: false },
+  { id: "steps", text: "10K Steps", icon: "steps", scheduleMode: "days", days: [0,1,2,3,4,5,6], weeklyTarget: 7, trackScore: true, trackStreak: true, goalId: "", completions: {} },
+  { id: "lift", text: "Lift / Sauna", icon: "lift", scheduleMode: "days", days: [1,2,3,4,5], weeklyTarget: 5, trackScore: true, trackStreak: true, goalId: "", completions: {} },
+  { id: "nutrition", text: "Clean Nutrition", icon: "nutrition", scheduleMode: "days", days: [0,1,2,3,4,5,6], weeklyTarget: 7, trackScore: true, trackStreak: true, goalId: "", completions: {} },
+  { id: "hydrate", text: "Hydrate", icon: "hydrate", scheduleMode: "days", days: [0,1,2,3,4,5,6], weeklyTarget: 7, trackScore: true, trackStreak: true, goalId: "", completions: {} },
+  { id: "mindset", text: "Mindset / Prayer", icon: "mindset", scheduleMode: "days", days: [0,1,2,3,4,5,6], weeklyTarget: 7, trackScore: true, trackStreak: true, goalId: "", completions: {} },
+  { id: "read", text: "Read", icon: "read", scheduleMode: "days", days: [0,1,2,3,4,5,6], weeklyTarget: 7, trackScore: true, trackStreak: true, goalId: "", completions: {} },
+  { id: "am", text: "AM Review", icon: "am", scheduleMode: "days", days: [1,2,3,4,5], weeklyTarget: 5, trackScore: true, trackStreak: true, goalId: "", completions: {} },
+  { id: "pm", text: "PM Review", icon: "pm", scheduleMode: "days", days: [1,2,3,4,5], weeklyTarget: 5, trackScore: true, trackStreak: true, goalId: "", completions: {} },
 ];
 
 function loadGoals() {
@@ -54,16 +54,40 @@ function loadGoals() {
 function loadStandards() {
   try {
     const raw = JSON.parse(localStorage.getItem("driven-intention-standards"));
-    if (!Array.isArray(raw) || raw.length < 5) return standardDefaults;
-    return raw;
+    const source = Array.isArray(raw) && raw.length ? raw : standardDefaults;
+    const todayKey = dateKey(new Date());
+    return source.map((s, index) => {
+      const fallback = standardDefaults.find(d => d.id === s.id) || standardDefaults[index] || {};
+      const migratedCompletions = s.completions || (s.done ? { [todayKey]: true } : {});
+      return {
+        ...fallback,
+        ...s,
+        scheduleMode: s.scheduleMode || fallback.scheduleMode || "days",
+        days: Array.isArray(s.days) && s.days.length ? s.days : (fallback.days || [0,1,2,3,4,5,6]),
+        weeklyTarget: Number(s.weeklyTarget || fallback.weeklyTarget || 5),
+        trackScore: s.trackScore !== false,
+        trackStreak: s.trackStreak !== false,
+        goalId: s.goalId || "",
+        completions: migratedCompletions,
+      };
+    });
   } catch {
-    return standardDefaults;
+    return standardDefaults.map(s => ({...s, completions:{}}));
   }
 }
 
 const pad = n => String(n).padStart(2, "0");
 const dateKey = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const today = new Date();
+const dayLabels = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+function standardScheduleLabel(standard) {
+  if (standard.scheduleMode === "flexible") return `${standard.weeklyTarget || 1}x this week - flexible`;
+  const days = (standard.days || []).map(d => dayLabels[d]);
+  if (days.length === 7) return "Every day";
+  if (days.join(",") === "Mon,Tue,Wed,Thu,Fri") return "Weekdays";
+  return days.join(", ");
+}
 
 function StandardIcon({ type, size = 24 }) {
   const map = {
@@ -116,7 +140,78 @@ export default function App() {
     return [...scheduled, ...incompleteGoalMoves].slice(0, 3);
   }, [todayEvents, goals, incompleteGoalMoves]);
 
-  const streak = 7;
+  const todayKey = dateKey(today);
+
+  function standardDone(standard, key = todayKey) {
+    return Boolean(standard.completions?.[key]);
+  }
+
+  function toggleStandardCompletion(id, key = todayKey) {
+    setStandards(old => old.map(s => {
+      if (s.id !== id) return s;
+      const completions = {...(s.completions || {})};
+      if (completions[key]) delete completions[key];
+      else completions[key] = true;
+      return {...s, completions};
+    }));
+  }
+
+  const standardsForToday = useMemo(
+    () => standards.filter(s => s.scheduleMode === "days"
+      ? (s.days || []).includes(today.getDay())
+      : true),
+    [standards]
+  );
+
+  const weeklyStandardStats = useMemo(() => {
+    const start = new Date(today);
+    const offset = (today.getDay() + 6) % 7;
+    start.setDate(today.getDate() - offset);
+    start.setHours(12,0,0,0);
+    let expected = 0;
+    let completed = 0;
+
+    standards.filter(s => s.trackScore !== false).forEach(s => {
+      if (s.scheduleMode === "flexible") {
+        const target = Math.max(1, Number(s.weeklyTarget) || 1);
+        expected += target;
+        let hits = 0;
+        for (let i=0;i<7;i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate()+i);
+          if (d > today) break;
+          if (s.completions?.[dateKey(d)]) hits++;
+        }
+        completed += Math.min(hits, target);
+      } else {
+        for (let i=0;i<7;i++) {
+          const d = new Date(start);
+          d.setDate(start.getDate()+i);
+          if (d > today) break;
+          if ((s.days || []).includes(d.getDay())) {
+            expected++;
+            if (s.completions?.[dateKey(d)]) completed++;
+          }
+        }
+      }
+    });
+    return { expected, completed, score: expected ? Math.round((completed/expected)*100) : 100 };
+  }, [standards]);
+
+  const streak = useMemo(() => {
+    let count = 0;
+    const cursor = new Date(today);
+    for (let i=0;i<90;i++) {
+      const key = dateKey(cursor);
+      const due = standards.filter(s => s.trackStreak !== false && s.scheduleMode === "days" && (s.days || []).includes(cursor.getDay()));
+      if (due.length) {
+        if (due.every(s => s.completions?.[key])) count++;
+        else break;
+      }
+      cursor.setDate(cursor.getDate()-1);
+    }
+    return count;
+  }, [standards]);
 
   function saveStandards(nextStandards) {
     const cleaned = nextStandards
@@ -315,7 +410,6 @@ export default function App() {
           <button className={activePage==="goals"?"nav-active":""} onClick={()=>setActivePage("goals")}><Target size={20}/> My Goals</button>
           <button className={activePage==="steps"?"nav-active":""} onClick={()=>setActivePage("steps")}><ListTodo size={20}/> Next Steps</button>
           <button className={activePage==="calendar"?"nav-active":""} onClick={()=>setActivePage("calendar")}><CalendarDays size={20}/> Calendar</button>
-          <button className={activePage==="standards"?"nav-active":""} onClick={()=>setActivePage("standards")}><CheckCircle2 size={20}/> Daily Standards</button>
           <button className={activePage==="progress"?"nav-active":""} onClick={()=>setActivePage("progress")}><BarChart3 size={20}/> Progress</button>
           <button className={activePage==="finances"?"nav-active":""} onClick={()=>setActivePage("finances")}><DollarSign size={20}/> Finances</button>
           <button className={activePage==="projects"?"nav-active":""} onClick={()=>setActivePage("projects")}><FolderKanban size={20}/> Projects</button>
@@ -388,17 +482,21 @@ export default function App() {
             <section className="panel standards-panel">
               <div className="section-heading">
                 <div className="heading-icon"><CheckCircle2 size={24}/></div>
-                <div><h2>Daily Standards</h2><span>The non-negotiables.</span></div>
-                <button className="text-btn" onClick={() => setStandardsEditor(true)}>Edit Standards <ChevronRight size={16}/></button>
+                <div><h2>Today’s Standards</h2><span>Recurring next steps scheduled for today.</span></div>
+                <button className="text-btn" onClick={() => setStandardsEditor(true)}>Manage Standards <ChevronRight size={16}/></button>
               </div>
               <div className="standards-row">
-                {standards.map(s => (
-                  <button key={s.id} className={"standard-circle " + (s.done ? "done" : "")} onClick={() => setStandards(old => old.map(x => x.id === s.id ? {...x, done: !x.done} : x))}>
-                    <span className="standard-icon"><StandardIcon type={s.icon}/></span>
-                    <b>{s.text}</b>
-                    <small>{s.done ? "1/1" : "0/1"}</small>
-                  </button>
-                ))}
+                {standardsForToday.map(s => {
+                  const done = standardDone(s);
+                  return (
+                    <button key={s.id} className={"standard-circle " + (done ? "done" : "")} onClick={() => toggleStandardCompletion(s.id)}>
+                      <span className="standard-icon"><StandardIcon type={s.icon}/></span>
+                      <b>{s.text}</b>
+                      <small>{done ? "Complete" : standardScheduleLabel(s)}</small>
+                    </button>
+                  );
+                })}
+                {!standardsForToday.length && <div className="clear-card"><CheckCircle2 size={30}/><b>No standards scheduled today.</b><span>Use Manage Standards to choose your days.</span></div>}
               </div>
             </section>
 
@@ -491,6 +589,26 @@ export default function App() {
         ) : activePage === "steps" ? (
           <section className="page-shell">
             <div className="page-title"><div><p>ACTION</p><h2>Next Steps</h2><span>Every action stays connected to the goal it moves forward.</span></div><button className="gold-btn" onClick={()=>newStep()}><Plus size={18}/> Add Next Step</button></div>
+            <div className="steps-section-heading">
+              <div><p>RECURRING</p><h3>Today’s Standards</h3><span>These populate automatically from the schedule you choose.</span></div>
+              <button className="text-btn" onClick={() => setStandardsEditor(true)}><Settings size={16}/> Manage Standards</button>
+            </div>
+            <div className="steps-page-grid standards-next-steps">
+              {standardsForToday.map(s => {
+                const done = standardDone(s);
+                const linkedGoal = goals.find(g => g.id === s.goalId);
+                return <article className={"step-page-card standard-step-card "+(done?"done":"")} key={s.id}>
+                  <span className="mini-icon health"><StandardIcon type={s.icon} size={18}/></span>
+                  <div><small>STANDARD - {standardScheduleLabel(s)}</small><h3>{s.text}</h3><p>{linkedGoal ? <><Target size={13}/> {linkedGoal.title}</> : "Recurring commitment"}</p></div>
+                  <div className="step-actions"><span className="standard-score-chip">{done ? "Done today" : "Due today"}</span><button className="complete-round" onClick={()=>toggleStandardCompletion(s.id)}><CheckCircle2 size={22}/></button></div>
+                </article>;
+              })}
+              {!standardsForToday.length && <div className="empty-state-inline">No recurring standards are scheduled for today.</div>}
+            </div>
+
+            <div className="steps-section-heading goal-steps-heading">
+              <div><p>GOALS</p><h3>Goal Next Steps</h3><span>One-time actions tied directly to your 90-day goals.</span></div>
+            </div>
             <div className="steps-page-grid">
               {incompleteGoalMoves.map(move => <article className="step-page-card" key={move.id}>
                 <span className={"mini-icon "+move.category}><ListTodo size={17}/></span>
@@ -522,8 +640,9 @@ export default function App() {
             <div className="progress-page-grid">
               <article className="metric-card"><span>GOALS</span><strong>{goals.length}</strong><p>Active 90-day outcomes</p></article>
               <article className="metric-card"><span>NEXT STEPS DONE</span><strong>{goals.flatMap(g=>g.priorities).filter(p=>p.done).length}</strong><p>Completed actions</p></article>
-              <article className="metric-card"><span>STANDARDS TODAY</span><strong>{standards.filter(s=>s.done).length}/{standards.length}</strong><p>Daily consistency</p></article>
-              <article className="metric-card"><span>STREAK</span><strong>{streak}</strong><p>Days of momentum</p></article>
+              <article className="metric-card"><span>STANDARDS TODAY</span><strong>{standardsForToday.filter(s=>standardDone(s)).length}/{standardsForToday.length}</strong><p>Scheduled recurring actions</p></article>
+              <article className="metric-card"><span>WEEKLY STANDARD SCORE</span><strong>{weeklyStandardStats.score}%</strong><p>{weeklyStandardStats.completed}/{weeklyStandardStats.expected} scheduled completions</p></article>
+              <article className="metric-card"><span>STREAK</span><strong>{streak}</strong><p>Consecutive scheduled days completed</p></article>
             </div>
             <section className="panel progress-goals"><h3>90-Day Goal Progress</h3>{goals.map(g=><div className="progress-line" key={g.id}><span>{g.title}</span><b>{g.progress}%</b><div className="goal-progress"><i style={{width:g.progress+"%"}}/></div></div>)}</section>
           </section>
@@ -544,7 +663,7 @@ export default function App() {
 
       {editing && <GoalModal goal={editing} onClose={() => setEditing(null)} onSave={saveGoal} onDelete={deleteGoal}/>}
       {stepEditor && <StepModal step={stepEditor} goals={goals} onClose={()=>setStepEditor(null)} onSave={saveStep}/>}
-      {standardsEditor && <StandardsModal standards={standards} onClose={()=>setStandardsEditor(false)} onSave={saveStandards} onReset={resetStandards}/>}
+      {standardsEditor && <StandardsModal standards={standards} goals={goals} onClose={()=>setStandardsEditor(false)} onSave={saveStandards} onReset={resetStandards}/>}
     </div>
   );
 }
@@ -609,11 +728,21 @@ function StepModal({ step, goals, onClose, onSave }) {
   </div>
 }
 
-function StandardsModal({ standards, onClose, onSave, onReset }) {
-  const [draft, setDraft] = useState(standards.map(s => ({...s})));
+function StandardsModal({ standards, goals, onClose, onSave, onReset }) {
+  const [draft, setDraft] = useState(standards.map(s => ({...s, days:[...(s.days || [])], completions:{...(s.completions || {})}})));
 
-  function updateText(id, text) {
-    setDraft(items => items.map(s => s.id === id ? {...s, text} : s));
+  function updateStandard(id, changes) {
+    setDraft(items => items.map(s => s.id === id ? {...s, ...changes} : s));
+  }
+
+  function toggleDay(id, day) {
+    setDraft(items => items.map(s => {
+      if (s.id !== id) return s;
+      const days = (s.days || []).includes(day)
+        ? s.days.filter(d => d !== day)
+        : [...(s.days || []), day].sort((a,b)=>a-b);
+      return {...s, days};
+    }));
   }
 
   function removeStandard(id) {
@@ -625,29 +754,61 @@ function StandardsModal({ standards, onClose, onSave, onReset }) {
       id: crypto.randomUUID(),
       text: "New Standard",
       icon: "check",
-      done: false,
+      scheduleMode: "days",
+      days: [1,2,3,4,5],
+      weeklyTarget: 5,
+      trackScore: true,
+      trackStreak: true,
+      goalId: "",
+      completions: {},
     }]);
   }
 
   return <div className="modal-backdrop" onMouseDown={e => e.target === e.currentTarget && onClose()}>
     <div className="modal standards-modal">
       <div className="modal-head">
-        <div><p className="eyebrow">DAILY STANDARDS</p><h2>Edit your non-negotiables.</h2></div>
+        <div><p className="eyebrow">RECURRING NEXT STEPS</p><h2>Build your weekly standards.</h2></div>
         <button className="icon" onClick={onClose}><X/></button>
       </div>
-      <p className="standards-help">Rename, add, or remove standards. Your changes save to this app automatically.</p>
+      <p className="standards-help">Choose exactly when each standard should appear in Next Steps. Specific-day standards can build streaks; flexible standards track a weekly target.</p>
       <div className="standards-editor-list">
         {draft.map((s, index) => (
-          <div className="standard-edit-row" key={s.id}>
+          <div className="standard-edit-row standard-edit-expanded" key={s.id}>
             <span className="standard-edit-icon"><StandardIcon type={s.icon}/></span>
-            <div>
+            <div className="standard-edit-fields">
               <small>STANDARD {index + 1}</small>
               <input
                 value={s.text}
-                onChange={e => updateText(s.id, e.target.value)}
-                onKeyDown={e => e.key === "Enter" && e.currentTarget.blur()}
+                onChange={e => updateStandard(s.id, {text:e.target.value})}
                 placeholder="Name this standard"
               />
+              <div className="standard-config-grid">
+                <label>Schedule
+                  <select value={s.scheduleMode || "days"} onChange={e=>updateStandard(s.id,{scheduleMode:e.target.value})}>
+                    <option value="days">Specific days</option>
+                    <option value="flexible">Flexible weekly target</option>
+                  </select>
+                </label>
+                <label>Linked 90-day goal
+                  <select value={s.goalId || ""} onChange={e=>updateStandard(s.id,{goalId:e.target.value})}>
+                    <option value="">Not linked</option>
+                    {goals.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}
+                  </select>
+                </label>
+              </div>
+              {s.scheduleMode === "flexible" ? (
+                <label className="weekly-target-label">Weekly target
+                  <input type="number" min="1" max="14" value={s.weeklyTarget || 1} onChange={e=>updateStandard(s.id,{weeklyTarget:Math.max(1,Number(e.target.value)||1)})}/>
+                </label>
+              ) : (
+                <div className="day-picker" aria-label={"Days for "+s.text}>
+                  {dayLabels.map((label, day)=><button type="button" key={label} className={(s.days || []).includes(day)?"selected":""} onClick={()=>toggleDay(s.id,day)}>{label}</button>)}
+                </div>
+              )}
+              <div className="standard-track-row">
+                <label><input type="checkbox" checked={s.trackScore !== false} onChange={e=>updateStandard(s.id,{trackScore:e.target.checked})}/> Include in weekly score</label>
+                <label><input type="checkbox" checked={s.trackStreak !== false && s.scheduleMode !== "flexible"} disabled={s.scheduleMode === "flexible"} onChange={e=>updateStandard(s.id,{trackStreak:e.target.checked})}/> Track streak</label>
+              </div>
             </div>
             <button className="icon danger" aria-label={"Delete " + s.text} onClick={() => removeStandard(s.id)}><Trash2 size={17}/></button>
           </div>
