@@ -98,6 +98,35 @@ function StandardIcon({ type, size = 24 }) {
   return <Icon size={size}/>;
 }
 
+function playChaChing() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    const ping = (freq, start, duration, volume = 0.13) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(freq, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume, start + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + duration + 0.02);
+    };
+
+    ping(740, now, 0.12, 0.10);
+    ping(990, now + 0.07, 0.16, 0.12);
+    ping(1480, now + 0.16, 0.22, 0.14);
+    ping(1975, now + 0.22, 0.28, 0.10);
+    setTimeout(() => ctx.close?.(), 800);
+  } catch {}
+}
+
 export default function App() {
   const [goals, setGoals] = useState(loadGoals);
   const [editing, setEditing] = useState(null);
@@ -171,6 +200,8 @@ export default function App() {
   }
 
   function toggleStandardCompletion(id, key = todayKey) {
+    const current = standards.find(s => s.id === id);
+    if (current && !current.completions?.[key]) playChaChing();
     setStandards(old => old.map(s => {
       if (s.id !== id) return s;
       const completions = {...(s.completions || {})};
@@ -389,6 +420,8 @@ export default function App() {
   }
 
   function toggleQuickTodo(id) {
+    const current = quickTodos.find(t => t.id === id);
+    if (current && !current.done) playChaChing();
     setQuickTodos(old => old.map(t => t.id === id ? {...t, done:!t.done} : t));
   }
 
@@ -419,6 +452,9 @@ export default function App() {
   }
 
   function togglePriority(goalId, priorityId) {
+    const currentGoal = goals.find(g => g.id === goalId);
+    const currentPriority = currentGoal?.priorities.find(p => p.id === priorityId);
+    if (currentPriority && !currentPriority.done) playChaChing();
     setGoals(old => old.map(g => g.id === goalId ? {
       ...g,
       priorities: g.priorities.map(p => {
@@ -453,11 +489,12 @@ export default function App() {
 
   function completeMove(move) {
     if (move.type === "event") {
+      if (!move.done && !(move.sourcePriorityId && move.goalId)) playChaChing();
       setEvents(old => old.map(e => e.id === move.id ? { ...e, done: true } : e));
       if (move.sourcePriorityId && move.goalId) togglePriority(move.goalId, move.sourcePriorityId);
     } else {
       togglePriority(move.goalId, move.id);
-      setEvents(old => old.map(e => e.sourcePriorityId === move.id ? {...e, done:true} : e));
+      setEvents(old => old.map(e => e.sourcePriorityId === move.id ? {...e,done:true} : e));
     }
   }
 
