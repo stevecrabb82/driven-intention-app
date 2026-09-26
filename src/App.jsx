@@ -112,6 +112,7 @@ export default function App() {
   const [stepEditor, setStepEditor] = useState(null);
   const [standardsEditor, setStandardsEditor] = useState(null);
   const [quickTodoText, setQuickTodoText] = useState("");
+  const [quickTodoGoalId, setQuickTodoGoalId] = useState("");
   const [quickTodos, setQuickTodos] = useState(() => {
     try { return JSON.parse(localStorage.getItem("driven-intention-quick-todos")) || []; }
     catch { return []; }
@@ -377,7 +378,13 @@ export default function App() {
   function addQuickTodo() {
     const text = quickTodoText.trim();
     if (!text) return;
-    setQuickTodos(old => [...old, {id:crypto.randomUUID(), text, date:dateKey(today), done:false}]);
+    setQuickTodos(old => [...old, {
+      id:crypto.randomUUID(),
+      text,
+      date:dateKey(today),
+      done:false,
+      goalId:quickTodoGoalId || ""
+    }]);
     setQuickTodoText("");
   }
 
@@ -394,6 +401,10 @@ export default function App() {
       return;
     }
     setQuickTodos(old => old.map(t => t.id === todo.id ? {...t, text} : t));
+  }
+
+  function linkQuickTodoToGoal(id, goalId) {
+    setQuickTodos(old => old.map(t => t.id === id ? {...t, goalId} : t));
   }
 
   function saveGoal(goal) {
@@ -525,13 +536,13 @@ export default function App() {
                 <div>
                   <p>TODAY</p>
                   <h2>Daily Execution</h2>
-                  <span>Standards, your single most important move, and the small tasks that keep the day moving.</span>
+                  <span>Standards • Focus • To-dos</span>
                 </div>
               </div>
 
               <div className="daily-subsection">
                 <div className="daily-subsection-head">
-                  <div><small>NON-NEGOTIABLES</small><h3>Daily Standards</h3><span>Recurring commitments that build your score and streak.</span></div>
+                  <div><small>NON-NEGOTIABLES</small><h3>Daily Standards</h3></div>
                   <button className="text-btn" onClick={() => setStandardsEditor("all")}><Settings size={16}/> Manage</button>
                 </div>
                 <div className="standards-focus-grid">
@@ -560,7 +571,7 @@ export default function App() {
 
               <div className="daily-subsection important-subsection">
                 <div className="daily-subsection-head">
-                  <div><small>FOCUS FIRST</small><h3>Most Important Next Step</h3><span>The one action that matters most today.</span></div>
+                  <div><small>FOCUS FIRST</small><h3>Most Important Next Step</h3></div>
                   <button className="gold-btn small-gold-btn" onClick={() => newStep()}><Plus size={17}/> Add / Change</button>
                 </div>
                 {mostImportantMove ? (
@@ -585,20 +596,34 @@ export default function App() {
 
               <div className="daily-subsection todo-subsection">
                 <div className="daily-subsection-head">
-                  <div><small>QUICK CAPTURE</small><h3>Today's To-Do List</h3><span>Small tasks that need to get out of your head and onto the list.</span></div>
+                  <div><small>QUICK CAPTURE</small><h3>Today's To-Do List</h3></div>
                 </div>
                 <div className="quick-todo-add">
                   <input value={quickTodoText} onChange={e=>setQuickTodoText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addQuickTodo()} placeholder="Add a quick task for today..."/>
+                  <select value={quickTodoGoalId} onChange={e=>setQuickTodoGoalId(e.target.value)} aria-label="Link new to-do to a 90-day goal">
+                    <option value="">No goal link</option>
+                    {goals.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}
+                  </select>
                   <button onClick={addQuickTodo}><Plus size={18}/> Add</button>
                 </div>
                 <div className="quick-todo-list">
-                  {todaysQuickTodos.map(todo => (
-                    <div className={"quick-todo-row "+(todo.done?"done":"")} key={todo.id}>
-                      <button className="todo-check" onClick={()=>toggleQuickTodo(todo.id)}><CheckCircle2 size={21}/></button>
-                      <button className="todo-text" onClick={()=>editQuickTodo(todo)}>{todo.text}</button>
-                      <button className="todo-edit" onClick={()=>editQuickTodo(todo)}><Pencil size={16}/></button>
-                    </div>
-                  ))}
+                  {todaysQuickTodos.map(todo => {
+                    const linkedGoal = goals.find(g=>g.id===todo.goalId);
+                    return (
+                      <div className={"quick-todo-row "+(todo.done?"done":"")} key={todo.id}>
+                        <button className="todo-check" onClick={()=>toggleQuickTodo(todo.id)}><CheckCircle2 size={21}/></button>
+                        <div className="todo-main">
+                          <button className="todo-text" onClick={()=>editQuickTodo(todo)}>{todo.text}</button>
+                          <select className="todo-goal-link" value={todo.goalId || ""} onChange={e=>linkQuickTodoToGoal(todo.id,e.target.value)} aria-label={"Link "+todo.text+" to a 90-day goal"}>
+                            <option value="">No goal link</option>
+                            {goals.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}
+                          </select>
+                          {linkedGoal && <span className="todo-goal-chip"><Target size={11}/>{linkedGoal.title}</span>}
+                        </div>
+                        <button className="todo-edit" onClick={()=>editQuickTodo(todo)}><Pencil size={16}/></button>
+                      </div>
+                    );
+                  })}
                   {!todaysQuickTodos.length && <p className="no-items">No extra to-dos yet. Keep this list light.</p>}
                 </div>
               </div>
@@ -825,7 +850,7 @@ function StepModal({ step, goals, onClose, onSave }) {
     <div className="modal step-modal">
       <div className="modal-head"><div><p className="eyebrow">NEXT STEP</p><h2>{draft.isNew ? "What moves the goal forward?" : "Edit Next Step"}</h2></div><button className="icon" onClick={onClose}><X/></button></div>
       <label>Next Step<input autoFocus value={draft.text} onChange={e=>setDraft({...draft,text:e.target.value})} placeholder="Example: Call 5 investors"/></label>
-      <label>Moves Toward<select value={draft.goalId} onChange={e=>setDraft({...draft,goalId:e.target.value})}><option value="">Choose a 90-day goal</option>{goals.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}</select></label>
+      <label>Moves Toward (90-day goal)<select value={draft.goalId} onChange={e=>setDraft({...draft,goalId:e.target.value})}><option value="">Choose a 90-day goal</option>{goals.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}</select></label>
       <div className="quick-date-row">
         <button onClick={()=>setDraft({...draft,date:dateKey(today)})}>Today</button>
         <button onClick={()=>{const d=new Date();d.setDate(d.getDate()+1);setDraft({...draft,date:dateKey(d)})}}>Tomorrow</button>
@@ -888,7 +913,7 @@ function StandardsModal({ standards, goals, initialStandardId, onClose, onSave, 
         <div><p className="eyebrow">{initialStandardId ? "EDIT STANDARD" : "RECURRING NEXT STEPS"}</p><h2>{initialStandardId ? "Edit this standard." : "Build your weekly standards."}</h2></div>
         <button className="icon" onClick={onClose}><X/></button>
       </div>
-      <p className="standards-help">Choose exactly when each standard should appear in Next Steps. Specific-day standards can build streaks; flexible standards track a weekly target.</p>
+      <p className="standards-help">Choose when the standard appears and optionally link it to the 90-day goal it supports.</p>
       <div className="standards-editor-list">
         {draft.filter(s => !initialStandardId || s.id === initialStandardId).map((s, index) => (
           <div className="standard-edit-row standard-edit-expanded" key={s.id}>
@@ -907,7 +932,7 @@ function StandardsModal({ standards, goals, initialStandardId, onClose, onSave, 
                     <option value="flexible">Flexible weekly target</option>
                   </select>
                 </label>
-                <label>Linked 90-day goal
+                <label>Moves Toward (90-day goal)
                   <select value={s.goalId || ""} onChange={e=>updateStandard(s.id,{goalId:e.target.value})}>
                     <option value="">Not linked</option>
                     {goals.map(g=><option key={g.id} value={g.id}>{g.title}</option>)}

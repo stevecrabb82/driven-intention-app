@@ -731,3 +731,85 @@
   color:#3f7c59;
   box-shadow:none;
 }
+
+
+/* Goal-link controls and lighter daily execution density */
+.daily-subsection-head{
+  margin-bottom:9px;
+}
+.daily-subsection{
+  margin-top:17px;
+  padding-top:14px;
+}
+.quick-todo-add{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(170px,220px) auto;
+  align-items:center;
+}
+.quick-todo-add select,
+.todo-goal-link{
+  border:1px solid #ccd7d2;
+  border-radius:10px;
+  padding:9px 10px;
+  background:#fff;
+  color:#40534c;
+  font-size:11px;
+  min-width:0;
+}
+.quick-todo-row{
+  grid-template-columns:42px minmax(0,1fr) 42px;
+}
+.todo-main{
+  min-width:0;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(130px,190px);
+  align-items:center;
+  gap:8px;
+  padding:5px 0;
+}
+.todo-text{
+  width:100%;
+}
+.todo-goal-link{
+  width:100%;
+  padding:7px 8px;
+  font-size:10px;
+}
+.todo-goal-chip{
+  grid-column:1/-1;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  width:max-content;
+  max-width:100%;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#f2eee4;
+  color:#6d5b3f;
+  font-size:9px;
+  font-weight:800;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.quick-todo-row.done .todo-goal-chip{
+  background:#e4efe7;
+  color:#47705a;
+}
+
+@media (max-width:760px){
+  .quick-todo-add{
+    grid-template-columns:1fr;
+  }
+  .quick-todo-add select,
+  .quick-todo-add button{
+    width:100%;
+  }
+  .todo-main{
+    grid-template-columns:1fr;
+    gap:4px;
+  }
+  .todo-goal-chip{
+    display:none;
+  }
+}
