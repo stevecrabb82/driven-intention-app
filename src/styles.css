@@ -27,3 +27,165 @@
 .add-standard-btn:hover,.reset-btn:hover{background:#0a3932;color:#fff;border-color:#0a3932}
 .reset-btn{margin-right:auto}
 @media(max-width:600px){.standard-edit-row{grid-template-columns:auto 1fr auto}.standards-modal{padding:16px}}
+
+
+/* Recurring standards integrated into Next Steps */
+.steps-section-heading{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin:24px 0 12px;
+}
+.steps-section-heading p{
+  margin:0 0 3px;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.14em;
+  color:#b3874f;
+}
+.steps-section-heading h3{
+  margin:0;
+  font-size:21px;
+  color:#173b35;
+}
+.steps-section-heading span{
+  display:block;
+  margin-top:4px;
+  color:#6f7f79;
+  font-size:13px;
+}
+.goal-steps-heading{margin-top:30px;}
+.standards-next-steps{margin-bottom:8px;}
+.standard-step-card{
+  border-left:4px solid #b99558;
+}
+.standard-step-card.done{
+  opacity:.72;
+  background:#f4f7f4;
+}
+.standard-step-card.done h3{
+  text-decoration:line-through;
+}
+.standard-score-chip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:82px;
+  padding:7px 10px;
+  border-radius:999px;
+  background:#f3ead8;
+  color:#7b5e2f;
+  font-size:11px;
+  font-weight:800;
+}
+.standard-step-card.done .standard-score-chip{
+  background:#dfece4;
+  color:#285f45;
+}
+.empty-state-inline{
+  grid-column:1/-1;
+  padding:18px 20px;
+  border:1px dashed #cbd7d0;
+  border-radius:14px;
+  color:#718079;
+  background:#fbfcfb;
+  font-size:13px;
+}
+
+.standard-edit-expanded{
+  align-items:flex-start;
+}
+.standard-edit-fields{
+  flex:1;
+  min-width:0;
+}
+.standard-config-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+.standard-config-grid label,
+.weekly-target-label{
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  color:#53615c;
+  font-size:11px;
+  font-weight:700;
+}
+.standard-config-grid select,
+.weekly-target-label input{
+  width:100%;
+  border:1px solid #ccd6d1;
+  border-radius:9px;
+  padding:9px 10px;
+  background:#fff;
+  color:#263a34;
+  font:inherit;
+}
+.weekly-target-label{
+  margin-top:10px;
+  max-width:170px;
+}
+.day-picker{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:10px;
+}
+.day-picker button{
+  border:1px solid #ccd6d1;
+  background:#fff;
+  color:#52635d;
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:11px;
+  font-weight:800;
+  cursor:pointer;
+}
+.day-picker button.selected{
+  border-color:#1d5547;
+  background:#1d5547;
+  color:#fff;
+}
+.standard-track-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:16px;
+  margin-top:11px;
+  color:#5f6e68;
+  font-size:11px;
+  font-weight:700;
+}
+.standard-track-row label{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.standard-track-row input{
+  accent-color:#1d5547;
+}
+.standards-modal{
+  width:min(760px,calc(100vw - 32px));
+}
+.standards-modal .standards-editor-list{
+  max-height:55vh;
+  overflow:auto;
+  padding-right:4px;
+}
+
+@media (max-width: 720px){
+  .steps-section-heading{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .standard-config-grid{
+    grid-template-columns:1fr;
+  }
+  .standard-track-row{
+    flex-direction:column;
+    gap:8px;
+  }
+}
